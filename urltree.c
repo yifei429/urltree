@@ -47,13 +47,22 @@ static inline void uth_dbg(utlist_t *item)
 }
 static inline unsigned int uth_keyfind(utnode_info *info, int bucket_cnt)
 {
-	unsigned int key = ut_elfhash(info->level, info->str, info->str_len); 
+	unsigned int key1 = 0;
+	if (info->parent_str) {
+		key1 = ut_elfhash(0, info->parent_str, info->parent_str_len); 
+	}
+	unsigned int key = ut_elfhash(key1 + info->level, info->str, info->str_len); 
 	return key % bucket_cnt;
 }
 static inline unsigned int uth_keyadd(utlist_t *item, int bucket_cnt)
 {
 	ut_node *node = UTLIST_ELEM(item, typeof(node), hash_list);
-	unsigned int key = ut_elfhash(node->level, node->str, node->str_len); 
+	unsigned int key1 = 0, key;
+	if (node->parent && node->parent->str) {
+	key1 = ut_elfhash(0, node->parent->str, node->parent->str_len); 
+	}
+	
+	key = ut_elfhash(key1 + node->level, node->str, node->str_len); 
 	return key % bucket_cnt;
 }
 #endif

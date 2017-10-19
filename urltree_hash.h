@@ -16,7 +16,9 @@
 /* for search */
 typedef struct _utnode_info {
 	char *str;
+	char *parent_str;
 	unsigned short str_len;
+	unsigned short parent_str_len;
 	unsigned short level;
 } utnode_info;
 
@@ -109,18 +111,20 @@ static inline int uthash_add(uthash_t *hash, utlist_t *item)
 	if (hash->thread_safe)
 		pthread_rwlock_wrlock(&head->lock);
 	UTLIST_ADD(&head->head, item);
-	#if 0
-	if (UTLIST_HLEN(&head->head) > 20) {
+	#if 1
+	if (UTLIST_HLEN(&head->head) > 3) {
 		printf("======> hash confict(%d) more than 3.\n",
 			UTLIST_HLEN(&head->head));
 		utlist_t *item1 = NULL;
         	item1 = head->head.n;
+		#if 0
         	while(item1) {
 			printf("\t");
 			hash->dbg(item1);
 			printf("\n");
                 	item1 = item1->n;
         	}
+		#endif
 	}
 	#endif
 	hash->node_cnt++;
