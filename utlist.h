@@ -49,6 +49,30 @@ typedef struct utlist_head_t {
 	 	(lh)->cnt--;				\
 	 })
 
+
+#define UT_MALLOC(x) malloc(x)
+#define UT_FREE(x) free(x)
+
+
+#define ut_err(fmt, args...) printf("<%s:%d> "fmt, __FILE__, __LINE__, ##args)
+
+//#define UT_DEBUG 1
+#ifdef UT_DEBUG 
+#define ut_dbg(fmt, args...) printf("<%s:%d> "fmt, __FILE__, __LINE__, ##args)
+#else 
+#define ut_dbg(fmt, args...) 
+#endif
+
+#ifndef unlikely
+#define unlikely(x)  __builtin_expect(!!(x), 0)
+#endif
+
+#ifndef likely
+#define likely(x)    __builtin_expect(!!(x), 1)
+#endif
+
+
+
 #endif /* end of __H_UTLIST_H__  */
 
 

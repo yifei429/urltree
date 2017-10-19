@@ -13,9 +13,9 @@
 #include "urltree.h"
 
 #ifdef UT_HASH_CACHE
-static unsigned int ut_elfhash(char *k, int len){
-
-        unsigned int h = 0, g = 0;
+static unsigned int ut_elfhash(int seed, char *k, int len)
+{
+        unsigned int h = seed, g = 0;
         while(len > 0)
         {
                 h=(h<<4)+*k++;
@@ -37,15 +37,23 @@ static inline int uth_compare(utlist_t *item, utnode_info *info)
 	}
 	return 1;
 }
+static inline void uth_dbg(utlist_t *item)
+{
+	ut_node *node = UTLIST_ELEM(item, typeof(node), hash_list);
+	printf("(level:%d, len:%d,str:%s, parent:%s)", 
+		node->level, node->str_len, node->str,
+		node->parent?node->parent->str:"NULL");
+	return;
+}
 static inline unsigned int uth_keyfind(utnode_info *info, int bucket_cnt)
 {
-	unsigned int key = ut_elfhash(info->str, info->str_len); 
+	unsigned int key = ut_elfhash(info->level, info->str, info->str_len); 
 	return key % bucket_cnt;
 }
 static inline unsigned int uth_keyadd(utlist_t *item, int bucket_cnt)
 {
 	ut_node *node = UTLIST_ELEM(item, typeof(node), hash_list);
-	unsigned int key = ut_elfhash(node->str, node->str_len); 
+	unsigned int key = ut_elfhash(node->level, node->str, node->str_len); 
 	return key % bucket_cnt;
 }
 #endif
@@ -59,16 +67,21 @@ ut_root *ut_tree_create()
 		ut_err("urltree create failed\n");	
 		return NULL;
 	}
+	memset(root, 0x0, sizeof(ut_root));
 	root->node = ut_node_create("/", 1, 1);
 	if (!root->node)
 		goto failed;
 
+	root->total_node++;
 #ifdef UT_HASH_CACHE
-#define ID_HASH_MAX_BUCKETS 9767
 	root->hash = uthash_init(ID_HASH_MAX_BUCKETS, 1, 
-		uth_keyfind, uth_keyadd, uth_compare);
+		uth_keyfind, uth_keyadd, uth_compare, uth_dbg);
 	if (!root->hash)
 		goto failed;
+	if (uthash_add(root->hash, &root->node->hash_list)) {
+		ut_err("insert root / dir to hash failed\n");
+		goto failed;
+	}
 #endif
 
 	return root;

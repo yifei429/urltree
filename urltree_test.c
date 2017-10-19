@@ -66,6 +66,18 @@ void url_path_free(struct urlpath *head)
 	return;
 }
 
+void url_path_dump(struct urlpath *head)
+{
+	struct urlpath *bak = head;
+	int i = 1;
+	while (bak) {
+		printf("%d:%d:%s\n", i,bak->str_len, bak->str);
+		bak = bak->next;
+		i++;
+	}
+
+}
+
 struct urlpath *read_url_path(char *filename, int *cnt)
 {
 	FILE *f;
@@ -171,13 +183,8 @@ int main(int argc, char **argv)
 		return -1;
 	}
 	printf("total url cnt :%d\n", cnt);
-	bak = head;
-	i = 1;
-	while (bak) {
-		printf("%d:%d:%s\n", i,bak->str_len, bak->str);
-		bak = bak->next;
-		i++;
-	}
+
+	url_path_dump(head);
 	
 	malloc_stats();
 	display_mallinfo(NULL, &mstart);
@@ -192,10 +199,10 @@ int main(int argc, char **argv)
 	malloc_stats();
 	//ut_tree_dump(root);
 
-
-	ut_tree_search(root, head);
+	//ut_tree_search(root, head);
 	
 
+	printf("root count:%d, hash count:%d\n", root->total_node, root->hash->node_cnt);
 out:
 	if (root)
 		ut_tree_release(root);

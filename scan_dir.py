@@ -35,6 +35,6 @@ if __name__ == "__main__":
 		os.remove(website)
 	with open(website, 'w') as f:
 		for files in files_list: 
-			f.write(files[len(rootdir):])
+			f.write(files[len(rootdir) -1 :])
 			f.write('\n')
 	
