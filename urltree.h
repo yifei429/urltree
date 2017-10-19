@@ -105,9 +105,11 @@ static inline void ut_node_free(ut_root *root, ut_node *node)
 
 	if (child)	
 		ut_node_free(root, child);
+#ifdef UT_HASH_CACHE
 	if (uthash_del(root->hash, &node->hash_list)) {
 		ut_err("del hash cache failed\n");
 	}
+#endif
 	__ut_node_leaffree(node);
 	root->total_node--;
 	if (sibling)
@@ -241,9 +243,11 @@ static inline ut_node* __ut_node_insert(ut_root *root, ut_node *parent, char *st
 		node->level, node->str, parent->str);
 	UTLIST_ADD(&parent->child, &node->sibling);
 	node->parent = parent;
+#ifdef UT_HASH_CACHE
 	if (uthash_add(root->hash, &node->hash_list)) {
 		ut_err("insert to hash failed\n");
 	}
+#endif
 	root->total_node++;
 	return node;
 }

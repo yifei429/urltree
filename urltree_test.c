@@ -186,6 +186,8 @@ int main(int argc, char **argv)
 
 	url_path_dump(head);
 	
+	printf("======> memory start\n");
+	printf("==> memory stats\n");
 	malloc_stats();
 	display_mallinfo(NULL, &mstart);
 	root = init_tree(head);
@@ -195,14 +197,21 @@ int main(int argc, char **argv)
 	}
 
 	display_mallinfo(NULL, &mend);
+	printf("======> memory end\n");
 	display_usedmem(&mstart, &mend);
+	printf("==> memory stats\n");
 	malloc_stats();
 	//ut_tree_dump(root);
 
 	//ut_tree_search(root, head);
 	
+	printf("sizeof(utnode_head_t) is :%ld, bucket:%ld\n", 
+		sizeof(utnode_head_t), sizeof(utnode_head_t) * UTHASH_MAX_BUCKETS );
 
-	printf("root count:%d, hash count:%d\n", root->total_node, root->hash->node_cnt);
+	printf("root count:%d\n", root->total_node);
+#ifdef UT_HASH_CACHE
+	printf("hash count:%d\n", root->hash->node_cnt);
+#endif
 out:
 	if (root)
 		ut_tree_release(root);

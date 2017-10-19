@@ -30,7 +30,7 @@ typedef unsigned int (*uthash_keyfind) (utnode_info *info, int bucket_cnt);
 typedef unsigned int (*uthash_keyadd) (utlist_t *item, int bucket_cnt);
 typedef void (*uthash_dbg) (utlist_t *item);
 
-#define ID_HASH_MAX_BUCKETS 99767
+#define UTHASH_MAX_BUCKETS 99767
 typedef struct _uthash_t {
         int max_size;
         int node_cnt;
@@ -109,6 +109,7 @@ static inline int uthash_add(uthash_t *hash, utlist_t *item)
 	if (hash->thread_safe)
 		pthread_rwlock_wrlock(&head->lock);
 	UTLIST_ADD(&head->head, item);
+	#if 0
 	if (UTLIST_HLEN(&head->head) > 20) {
 		printf("======> hash confict(%d) more than 3.\n",
 			UTLIST_HLEN(&head->head));
@@ -121,6 +122,7 @@ static inline int uthash_add(uthash_t *hash, utlist_t *item)
                 	item1 = item1->n;
         	}
 	}
+	#endif
 	hash->node_cnt++;
 	if (hash->thread_safe)
 		pthread_rwlock_unlock(&head->lock);

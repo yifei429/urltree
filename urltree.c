@@ -74,7 +74,7 @@ ut_root *ut_tree_create()
 
 	root->total_node++;
 #ifdef UT_HASH_CACHE
-	root->hash = uthash_init(ID_HASH_MAX_BUCKETS, 1, 
+	root->hash = uthash_init(UTHASH_MAX_BUCKETS, 1, 
 		uth_keyfind, uth_keyadd, uth_compare, uth_dbg);
 	if (!root->hash)
 		goto failed;
