@@ -2,7 +2,7 @@ CFLAGS= -g -std=gnu99
 INCS=
 #CC=purify gcc
 CC=gcc
-SRCS= 
+SRCS= urltree.o 
 LDFLAGS += -L./
 LDFLAGS += -lpthread  
 DEPDIR = .deps
