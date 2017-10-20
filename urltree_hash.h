@@ -16,10 +16,8 @@
 /* for search */
 typedef struct _utnode_info {
 	char *str;
-	char *parent_str;
+	unsigned int parent_hash_key;
 	unsigned short str_len;
-	unsigned short parent_str_len;
-	unsigned short level;
 } utnode_info;
 
 typedef struct _utnode_head_t {
@@ -57,8 +55,12 @@ static inline uthash_t* uthash_init(int size, int thread_safe,
         int len = 0;
         int i = 0;
 
-        if (size <=0 || !keyfind || !keyadd || !compare)
+        if (size <=0 || !keyfind || !keyadd )
                 return NULL;
+	if (!compare && thread_safe) {
+		ut_err("item confict treate out of hash, no threa safe support\n");
+		return NULL;
+	}
 
         len = sizeof(uthash_t) + sizeof(utnode_head_t) * size;
         hash = UT_MALLOC(len);
@@ -117,14 +119,12 @@ static inline int uthash_add(uthash_t *hash, utlist_t *item)
 			UTLIST_HLEN(&head->head));
 		utlist_t *item1 = NULL;
         	item1 = head->head.n;
-		#if 0
         	while(item1) {
 			printf("\t");
 			hash->dbg(item1);
 			printf("\n");
                 	item1 = item1->n;
         	}
-		#endif
 	}
 	#endif
 	hash->node_cnt++;
@@ -169,7 +169,7 @@ static inline utlist_t *__uthash_find(uthash_t *hash, utnode_info *info, unsigne
 		pthread_rwlock_rdlock(&head->lock);
         item = head->head.n;
         while(item) {
-                if (!hash->compare(item, info))
+                if (!hash->compare || hash->compare(item, info))
                         break;
 
                 item = item->n;

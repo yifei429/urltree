@@ -124,6 +124,9 @@ struct urlpath *read_url_path(char *filename, int *cnt)
 ut_root *init_tree(struct urlpath *head)
 {
 	ut_root *root = NULL;
+	struct  timeval  start, end;
+
+	gettimeofday(&start,NULL);
 	root = ut_tree_create();
 	if (!root) {
 		ut_err("create ut tree failed\n");
@@ -134,6 +137,8 @@ ut_root *init_tree(struct urlpath *head)
 		head = head->next;
 	}
 
+	gettimeofday(&end,NULL);
+	printf("create tree timer = %ld us\n", 1000000 * (end.tv_sec-start.tv_sec) + end.tv_usec-start.tv_usec);
 	return root;
 }
 
@@ -142,6 +147,7 @@ int ut_tree_search(ut_root *root, struct urlpath *head)
 	int ret = 0;
 	struct urlpath *bak = head;
 	int i = 0, max = 10000;
+	long total_search = 0, total_time  =0;;
 	struct  timeval  start, end;
 
 	gettimeofday(&start,NULL);
@@ -155,10 +161,13 @@ int ut_tree_search(ut_root *root, struct urlpath *head)
 				//printf("find url level:%d, url:%s\n", ret, head->str);
 			}
 			head = head->next;
+			total_search++;
 		}
 	}
 	gettimeofday(&end,NULL);
-	printf("timer = %ld us\n", 1000000 * (end.tv_sec-start.tv_sec) + end.tv_usec-start.tv_usec);
+	total_time = 1000000 * (end.tv_sec-start.tv_sec) + (end.tv_usec-start.tv_usec);
+	printf("timer = %ld us, search cout:%ld, search:%ld times/persecond\n", 
+		total_time, total_search, (long)(total_search * 1000000) /(total_time));
 
 	return 0;
 }
@@ -184,7 +193,6 @@ int main(int argc, char **argv)
 	}
 	printf("total url cnt :%d\n", cnt);
 
-	url_path_dump(head);
 	
 	printf("======> memory start\n");
 	printf("==> memory stats\n");
@@ -201,9 +209,10 @@ int main(int argc, char **argv)
 	display_usedmem(&mstart, &mend);
 	printf("==> memory stats\n");
 	malloc_stats();
-	//ut_tree_dump(root);
 
-	//ut_tree_search(root, head);
+	url_path_dump(head);
+	ut_tree_dump(root);
+	ut_tree_search(root, head);
 	
 	printf("sizeof(utnode_head_t) is :%ld, bucket:%ld\n", 
 		sizeof(utnode_head_t), sizeof(utnode_head_t) * UTHASH_MAX_BUCKETS );
