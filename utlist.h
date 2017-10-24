@@ -8,6 +8,9 @@
 #ifndef __H_UTLIST_H__
 #define __H_UTLIST_H__
 
+
+#include <assert.h>
+
 typedef struct utlist {
 	struct utlist	*p;	/* previous element */
 	struct utlist	*n;	/* next element */
@@ -50,9 +53,6 @@ typedef struct utlist_head_t {
 	 })
 
 
-#define UT_MALLOC(x) malloc(x)
-#define UT_FREE(x) free(x)
-
 
 #define ut_err(fmt, args...) printf("<%s:%d> "fmt, __FILE__, __LINE__, ##args)
 
@@ -70,6 +70,23 @@ typedef struct utlist_head_t {
 #ifndef likely
 #define likely(x)    __builtin_expect(!!(x), 1)
 #endif
+
+
+#define UT_MALLOC(x) malloc(x)
+#define UT_FREE(x) free(x)
+#define UT_MALLOC_ALIGN(x, align, size) posix_memalign((x),(align), (size))
+
+static inline char *ut_str_slash(char *str, int len)
+{
+	assert(len >=0);
+	while(len > 0) {
+		if (*str == 47)
+			return str + 1;
+		str++;
+		len--;
+	}
+	return str + len;
+}
 
 
 

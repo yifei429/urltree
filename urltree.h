@@ -174,18 +174,6 @@ static inline int ut_delete()
 	return 0;
 }
 
-static inline char *ut_str_slash(char *str, int len)
-{
-	assert(len >=0);
-	while(len > 0) {
-		if (*str == 47)
-			return str + 1;
-		str++;
-		len--;
-	}
-	return str + len;
-}
-
 static inline ut_node *__ut_level_search(ut_node *node, char *str, int len)
 {
 	ut_node *bak = node;
