@@ -22,7 +22,7 @@ url_cbtree_test: url_cbtree_test.o url_cbtree.o
 	$(CC) $(CFLAGS) -c $< -o $@ -MD -MF $(DEPDIR)/$(<:.c=.d)
 
 clean:
-	rm -rf *.o $(DEPDIR) 
+	rm -rf *.o $(DEPDIR) urltree_test url_cbtree_test 
 
 -include $(DEPDIR)/*.d
 
