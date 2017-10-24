@@ -121,7 +121,7 @@ struct urlpath *read_url_path(char *filename, int *cnt)
 	return head;
 }
 
-ucb_tree *init_tree(struct urlpath *head)
+ucb_tree *init_cbtree(struct urlpath *head)
 {
 	ucb_tree *t = NULL;
 	struct  timeval  start, end;
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 	printf("==> memory stats\n");
 	malloc_stats();
 	display_mallinfo(NULL, &mstart);
-	tree = init_tree(head);
+	tree = init_cbtree(head);
 	if (!tree) {
 		printf("init tree failed\n");
 		goto out;

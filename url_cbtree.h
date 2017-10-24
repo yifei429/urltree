@@ -12,6 +12,7 @@
 #include <stdlib.h> 
 #include <sys/types.h> 
 #include <errno.h> 
+#include <unistd.h>
 
 #include "utlist.h"
 #define uint32 unsigned int
@@ -58,6 +59,8 @@ __ucb_subtree_search(ucb_subtree *t, const char *u, int u_len)
 		p= q->child[direction];
 	}
 
+	ut_dbg("search leaf(level:%d):%d:%s, for %d:%s\n", 
+		leaf->level, leaf->str, leaf->str_len, u, u_len);
 	leaf = (ucb_subtree *)p;
 	if (leaf->str_len == u_len && 0 == memcmp(u,leaf->str, u_len)) {
 		return leaf; 
@@ -88,6 +91,7 @@ static inline ucb_subtree* ucb_subtree_create_leaf(ucb_subtree *parent, const ch
 
 	memset(t, 0x0, sizeof(ucb_subtree));
 	if (u_len > 0 && u) {
+		t->str_len = u_len;
 		t->str = UT_MALLOC(u_len + 1);
 		if (!t->str) {
 			UT_FREE(t);
@@ -118,10 +122,12 @@ static inline ucb_subtree* __ucb_subtree_insert(ucb_subtree *t, const char *u, i
 
 	if(!p){
 		leaf = ucb_subtree_create_leaf(t, u , ulen, t->level + 1);
-		if(leaf) {
+		if(!leaf) {
 			ut_err("url subtree create failed\n");
 			return NULL;
 		}
+		ut_dbg("insert new leaf to tree(child:%d, str:%s):%d:%s\n", 
+			t->leaf_head.cnt, t->str, u_len, u);
 		return leaf;
 	}
 
@@ -169,12 +175,14 @@ different_byte_found:
 	}
 
 	leaf = ucb_subtree_create_leaf(t, u , ulen, t->level + 1);
-	if(leaf) {
+	if(!leaf) {
 		ut_err("url subtree create failed\n");
 		UT_FREE(newnode);
 		return NULL;
 	}
 
+	ut_dbg("insert new leaf to tree(child:%d,str:%s):%d:%s\n", 
+		t->leaf_head.cnt,t->str, u_len, u);
 	newnode->byte= newbyte;
 	newnode->otherbits= newotherbits;
 	newnode->child[1-newdirection]= leaf;
@@ -203,19 +211,23 @@ different_byte_found:
 static inline ucb_subtree *
 ucb_subtree_search(ucb_subtree *t, const char *u, int len, ucb_subtree **parent, int *left)
 {
-	ucb_subtree *leaf;
+	ucb_subtree *leaf = NULL;
 	const char *ptr, *end;
-	if (!t || !u || len <= 0 || !*parent || !left)
+	if (!t || !u || len <= 0 || !*parent || !left) {
+		ut_err("wrong args\n");
 		return NULL;
-
+	}
 	*parent = t;
 	*left = len;
-	while(t) {
+	while(t->root) {
 		ptr = u;
 		end = ut_str_slash((char *)ptr, len);
-		leaf = __ucb_subtree_search(t, ptr, end - ptr);
-		if (!leaf || len - (end-ptr) <= 0)
+		leaf = __ucb_subtree_search(t->root, ptr, end - ptr);
+		if (!leaf || len - (end-ptr) <= 0) {
+			ut_dbg("not find in tree(level:%d)%d:%s. for %d:%s\n", 
+				t->level, t->str_len, t->str, end-ptr, ptr);
 			return NULL;
+		}
 	
 		ut_dbg("find leaf(len:%d, root:%p): %s\n", 
 			leaf->str_len, leaf->root, leaf->str);
@@ -309,6 +321,7 @@ static inline void ucb_subtree_dump(ucb_subtree *t)
 		t->level, UTLIST_HLEN(&t->leaf_head),
 		t->str_len, t->str);
 
+	sleep(1);
 	if (UTLIST_IS_HEMPTY(&t->leaf_head))
 		return;
 	list = t->leaf_head.n;
@@ -365,7 +378,6 @@ static inline int ucb_subtree_insert(ucb_subtree *st, const char *u, int len)
 		if (!leaf)
 			break;
 		leaf->parent = st;
-		UTLIST_ADD(&st->leaf_head, &leaf->list);
 		len = len - (end-ptr);
 		u = end;
 		st = leaf;
@@ -411,6 +423,7 @@ static inline int ucbtree_insert(ucb_tree *t, const char *u, int len)
 		ut_err("insert failed for (len:%d) url:%s\n", len, u);
 		return -1;
 	}
+	sleep(1);
 	return 0;
 }
 
