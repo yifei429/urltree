@@ -39,29 +39,30 @@ typedef struct {
 } ucb_subnode;
 
 static inline ucb_subtree *
-__ucb_subtree_search(ucb_subtree *t, const char *u, int u_len)
+__ucb_subtree_search(void *t, const char *u, int u_len)
 {
 	const unsigned char *ubytes= (void*)u;
 	const size_t ulen= u_len;
-	unsigned char *p= t->root;
+	unsigned char *p= t;
 	ucb_subtree *leaf = NULL;
 
 	if(!p)
 		return 0;
 
 	while(1&(intptr_t)p){
-		ucb_subnode*q= (void*)(p-1);
+		ucb_subnode *q = (void*)(p-1);
 
 		unsigned char c= 0;
-		if(q->byte<ulen)c= ubytes[q->byte];
+		if (q->byte < ulen) 
+			c = ubytes[q->byte];
 		const int direction= (1+(q->otherbits|c))>>8;
 
 		p= q->child[direction];
 	}
 
-	ut_dbg("search leaf(level:%d):%d:%s, for %d:%s\n", 
-		leaf->level, leaf->str, leaf->str_len, u, u_len);
 	leaf = (ucb_subtree *)p;
+	ut_dbg("get leaf(level:%d):%d:%s, for %d:%s\n", 
+		leaf->level, leaf->str_len, leaf->str, u_len, u);
 	if (leaf->str_len == u_len && 0 == memcmp(u,leaf->str, u_len)) {
 		return leaf; 
 	}
@@ -126,8 +127,9 @@ static inline ucb_subtree* __ucb_subtree_insert(ucb_subtree *t, const char *u, i
 			ut_err("url subtree create failed\n");
 			return NULL;
 		}
-		ut_dbg("insert new leaf to tree(child:%d, str:%s):%d:%s\n", 
-			t->leaf_head.cnt, t->str, u_len, u);
+		t->root = leaf;
+		ut_dbg("insert new leaf to tree(child:%d, str:%s),leaf:%p, for %d:%s\n", 
+			t->leaf_head.cnt, t->str, leaf, u_len, u);
 		return leaf;
 	}
 
@@ -181,8 +183,8 @@ different_byte_found:
 		return NULL;
 	}
 
-	ut_dbg("insert new leaf to tree(child:%d,str:%s):%d:%s\n", 
-		t->leaf_head.cnt,t->str, u_len, u);
+	ut_dbg("insert new leaf to tree(child:%d,str:%s):leaf:%p(newnode:%p),%d:%s\n", 
+		t->leaf_head.cnt,t->str, p, newnode, u_len, u);
 	newnode->byte= newbyte;
 	newnode->otherbits= newotherbits;
 	newnode->child[1-newdirection]= leaf;
@@ -213,8 +215,9 @@ ucb_subtree_search(ucb_subtree *t, const char *u, int len, ucb_subtree **parent,
 {
 	ucb_subtree *leaf = NULL;
 	const char *ptr, *end;
-	if (!t || !u || len <= 0 || !*parent || !left) {
-		ut_err("wrong args\n");
+	if (!t || !u || len <= 0 || !(*parent) || !left) {
+		ut_err("wrong args:t:%p,u:%p,len:%d,*parent:%p,left:%p\n",
+			t, u, len, *parent, left);
 		return NULL;
 	}
 	*parent = t;
@@ -222,17 +225,19 @@ ucb_subtree_search(ucb_subtree *t, const char *u, int len, ucb_subtree **parent,
 	while(t->root) {
 		ptr = u;
 		end = ut_str_slash((char *)ptr, len);
+		ut_dbg("search tree:(len:%d)%s, for len:%d,%s\n",
+			t->str_len, t->str, end-ptr, ptr);
 		leaf = __ucb_subtree_search(t->root, ptr, end - ptr);
 		if (!leaf || len - (end-ptr) <= 0) {
-			ut_dbg("not find in tree(level:%d)%d:%s. for %d:%s\n", 
+			ut_dbg("not find in parent(level:%d)%d:%s. for %d:%s\n", 
 				t->level, t->str_len, t->str, end-ptr, ptr);
 			return NULL;
 		}
 	
-		ut_dbg("find leaf(len:%d, root:%p): %s\n", 
-			leaf->str_len, leaf->root, leaf->str);
+		ut_dbg("find leaf(len:%d, root:%p):%s, for (len:%d) %s\n", 
+			leaf->str_len, leaf->root, leaf->str, end-ptr, ptr);
+		t = leaf;
 		*parent = t;
-		t = leaf->root;
 		u = end;
 		len = len - (end-ptr);
 		*left = len;
@@ -321,7 +326,6 @@ static inline void ucb_subtree_dump(ucb_subtree *t)
 		t->level, UTLIST_HLEN(&t->leaf_head),
 		t->str_len, t->str);
 
-	sleep(1);
 	if (UTLIST_IS_HEMPTY(&t->leaf_head))
 		return;
 	list = t->leaf_head.n;
@@ -405,7 +409,7 @@ static inline int ucbtree_insert(ucb_tree *t, const char *u, int len)
 	if (memcmp(u, st->str, 1) != 0)
 		return -1;
 	if (len <= 1) {
-		return 1;
+		return 0;
 	}
 	st = ucb_subtree_search(st, u+1, len-1, &parent, &left); 
 	if (st) {
@@ -417,13 +421,14 @@ static inline int ucbtree_insert(ucb_tree *t, const char *u, int len)
 		ut_err("insert failed, no parent for len:%d, str:%s\n", len, u);
 		return -1;
 	}
+	ut_dbg("[insert] for(len:%d) %s to parent:%d:%s\n", 
+		len, u, parent->str_len, parent->str);
 
 	ret = ucb_subtree_insert(parent, u + len - left, left);
 	if (ret) {
 		ut_err("insert failed for (len:%d) url:%s\n", len, u);
 		return -1;
 	}
-	sleep(1);
 	return 0;
 }
 
