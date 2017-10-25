@@ -58,9 +58,11 @@ typedef struct utlist_head_t {
 
 //#define UT_DEBUG 1
 #ifdef UT_DEBUG 
+#define MAX_SEARCH_TIME 1
 #define ut_dbg(fmt, args...) printf("<%s:%d> "fmt, __FILE__, __LINE__, ##args)
 #else 
 #define ut_dbg(fmt, args...) 
+#define MAX_SEARCH_TIME 10000
 #endif
 
 #ifndef unlikely

@@ -84,29 +84,33 @@ static inline unsigned int uth_keyadd(utlist_t *item, int bucket_cnt)
 ut_root *ut_tree_create()
 {
 	ut_root *root;
-	char *root_node = "/";
 	root = UT_MALLOC(sizeof(ut_root));
 	if(!root) {
 		ut_err("urltree create failed\n");	
 		return NULL;
 	}
 	memset(root, 0x0, sizeof(ut_root));
-	root->node = ut_node_create(root_node, 1, 1, root_node, 1);
+#if 0
+	root->node = ut_node_create(root_node, 1, 1, "/", 1);
 	if (!root->node)
 		goto failed;
-
 	root->total_node++;
+#endif
 #ifdef UT_HASH_CACHE
 	root->hash = uthash_init(UTHASH_MAX_BUCKETS, 0, 
 		uth_keyfind, uth_keyadd, NULL, uth_dbg);
 	if (!root->hash)
 		goto failed;
 
-	if (uthash_add(root->hash, &root->node->hash_list)) {
+	if (root->node && uthash_add(root->hash, &root->node->hash_list)) {
 		ut_err("insert root / dir to hash failed\n");
 		goto failed;
 	}
 #endif
+	if(pthread_rwlock_init(&root->lock, NULL)) {
+		ut_err("pthread init failed for tree\n");
+		goto failed;
+	}
 
 	return root;
 failed:
@@ -122,32 +126,39 @@ int ut_search(ut_root *root, char *str, int len)
 	ut_node *node, *parent = NULL;
 	char *ptr, *end;
 	char *str_node = str;
-	int left = 0;
+	int left = 0, ret = 0;
 	if (!root || !str || len <= 0)
 		return -1;
+
+	pthread_rwlock_rdlock(&root->lock);
 #ifdef UT_HASH_CACHE
 #ifdef UT_HASH_CACHE_LEAF 
 #else
 	str_node = ut_last_node(str, len);
 	if (!str_node) {
 		ut_err("wrong url str(len:%d):%s, must start with slash \n", len, str);
-		return -1;
+		ret = -1;
+		goto out;
 	}
 #endif
 	node = ut_hash_search(root, str_node, len - (str_node -str), 0, str, 
 		ut_elfhash(0, str, str_node - str));
-	if (node)
-		return node->level;
-	printf("[===>]no node found in hash cache for (len:%d):%s, last:%s, new node.\n",
-		len, str, str_node);
+	if (node) {
+		ret = node->level;
+		goto out;
+	}
 
 #endif
 	node = root->node;
 	node = ut_level_search(node, str, len, str, &parent, &left);
 	if (node) {
-		return node->level;
+		ret = node->level;
+		goto out;
 	}
-	return 0;
+
+out:
+	pthread_rwlock_unlock(&root->lock);
+	return ret;
 }
 
 

@@ -122,13 +122,11 @@ struct urlpath *read_url_path(char *filename, int *cnt)
 	return head;
 }
 
-ut_root *init_tree(struct urlpath *head)
+ut_root *insert_tree(ut_root *root, struct urlpath *head)
 {
-	ut_root *root = NULL;
 	struct  timeval  start, end;
 
 	gettimeofday(&start,NULL);
-	root = ut_tree_create();
 	if (!root) {
 		ut_err("create ut tree failed\n");
 		return NULL;
@@ -147,7 +145,7 @@ int ut_tree_search(ut_root *root, struct urlpath *head)
 {
 	int ret = 0;
 	struct urlpath *bak = head;
-	int i = 0, max = 1000;
+	int i = 0, max = MAX_SEARCH_TIME;
 	long total_search = 0, total_time  =0;;
 	struct  timeval  start, end;
 
@@ -227,22 +225,25 @@ int main(int argc, char **argv)
 		return -1;
 	}
 	printf("total url cnt :%d\n", cnt);
-
-	printf("======> memory start\n");
-	printf("==> memory stats\n");
-	malloc_stats();
-	display_mallinfo(NULL, &mstart);
-	root = init_tree(head);
+	root = ut_tree_create();
 	if (!root) {
 		printf("init tree failed\n");
 		goto out;
 	}
 
+	printf("======> memory start\n");
+	display_mallinfo(NULL, &mstart);
+	printf("[stats]\n");
+	malloc_stats();
+
+	insert_tree(root, head);
+
 	display_mallinfo(NULL, &mend);
 	printf("======> memory end\n");
-	display_usedmem(&mstart, &mend);
-	printf("==> memory stats\n");
+	printf("[stats]\n");
 	malloc_stats();
+	printf("[mallinfo]\n");
+	display_usedmem(&mstart, &mend);
 
 	url_path_dump(head);
 	ut_tree_dump(root);
@@ -257,6 +258,14 @@ int main(int argc, char **argv)
 #endif
 	ut_tree_delete(root, head);
 	ut_tree_dump(root);
+#if 0
+	printf("=============>insert again\n");
+	insert_tree(root, head);
+	ut_tree_dump(root);
+	printf("=============>delete again\n");
+	ut_tree_delete(root, head);
+	ut_tree_dump(root);
+#endif
 out:
 	if (root)
 		ut_tree_release(root);
