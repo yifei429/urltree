@@ -152,6 +152,8 @@ int ut_search(ut_root *root, char *str, int len)
 	node = root->node;
 	node = ut_level_search(node, str, len, str, &parent, &left);
 	if (node) {
+		/* in rwlock, and don't add to leaf hash */
+		node->leaf = 1;
 		ret = node->level;
 		goto out;
 	}
