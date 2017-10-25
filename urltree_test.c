@@ -118,6 +118,7 @@ struct urlpath *read_url_path(char *filename, int *cnt)
 			prev->next = path;
 		prev = path;
 	}
+	fclose(f);
 	return head;
 }
 
@@ -146,7 +147,7 @@ int ut_tree_search(ut_root *root, struct urlpath *head)
 {
 	int ret = 0;
 	struct urlpath *bak = head;
-	int i = 0, max = 100000;
+	int i = 0, max = 1000;
 	long total_search = 0, total_time  =0;;
 	struct  timeval  start, end;
 
@@ -172,6 +173,40 @@ int ut_tree_search(ut_root *root, struct urlpath *head)
 	return 0;
 }
 
+int ut_tree_delete(ut_root *root, struct urlpath *head)
+{
+	int ret = 0;
+	struct urlpath *bak = head;
+	int i = 0, max = 1;
+
+	for( i = 0; i < max; i++) {
+		head = bak;
+		while (head) {
+			ret = ut_delete(root, head->str, head->str_len);
+			if (ret) {
+				printf("unknown url %s\n", head->str);
+			} else {
+				//printf("find url level:%d, url:%s\n", ret, head->str);
+			}
+			head = head->next;
+		}
+	}
+	ret = ut_delete(root, bak->str, bak->str_len);
+	if (ret) {
+		printf("test for 2nd delete, already delete.\n");
+	} else {
+		printf("error, delete twice\n");
+	}
+	ret = ut_delete(root, "/", 1);
+	if (ret) {
+		printf("test for 2nd delete, already delete.\n");
+	} 
+
+	return 0;
+}
+
+
+
 int main(int argc, char **argv)
 {
 	struct urlpath *head = NULL, *bak;	
@@ -193,7 +228,6 @@ int main(int argc, char **argv)
 	}
 	printf("total url cnt :%d\n", cnt);
 
-	
 	printf("======> memory start\n");
 	printf("==> memory stats\n");
 	malloc_stats();
@@ -221,6 +255,8 @@ int main(int argc, char **argv)
 #ifdef UT_HASH_CACHE
 	printf("hash count:%d\n", root->hash->node_cnt);
 #endif
+	ut_tree_delete(root, head);
+	ut_tree_dump(root);
 out:
 	if (root)
 		ut_tree_release(root);

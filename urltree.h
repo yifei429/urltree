@@ -117,24 +117,22 @@ failed:
 	return NULL;
 }
 
-static inline void ut_node_free(ut_root *root, ut_node *node)
+static inline void ut_node_free(ut_root *root, ut_node *node);
+static inline void __ut_node_free(ut_root *root, ut_node *node) 
 {
-	ut_node *sibling = NULL, *child = NULL;
+	ut_node *child = NULL;
 	if (!node)
 		return;
 
-	if (node->sibling.n)	
-		sibling = ut_container_of(node->sibling.n, ut_node, sibling);
-
-	if (!UTLIST_IS_HEMPTY(&node->child))
+	if (!UTLIST_IS_HEMPTY(&node->child)) {
 		child = ut_container_of(node->child.n, ut_node, sibling);
-
-	if (child)	
 		ut_node_free(root, child);
+	}
 #ifdef UT_HASH_CACHE
 #ifdef UT_HASH_CACHE_LEAF
 	if (node->leaf && uthash_del(root->hash, &node->hash_list)) {
-		ut_err("del hash cache failed\n");
+		ut_err("del hash cache failed for(len:%d) :%s\n",
+			node->str_len, node->str);
 	}
 #else
 	if (uthash_del(root->hash, &node->hash_list)) {
@@ -142,11 +140,31 @@ static inline void ut_node_free(ut_root *root, ut_node *node)
 	}
 #endif
 #endif
+	if (node->parent) {
+		ut_dbg("delete %d:%s from parent(child:%d):%d:%s\n", 
+			node->str_len, node->str, UTLIST_HLEN(&node->parent->child),node->parent->str_len, node->parent->str);
+		assert(!UTLIST_IS_UNLINK(&node->sibling));
+		UTLIST_DEL(&node->parent->child, &node->sibling);
+	}
+		
 	__ut_node_leaffree(node);
 	root->total_node--;
-	if (sibling)
-		ut_node_free(root, sibling);
+	return;
+}
 
+static inline void ut_node_free(ut_root *root, ut_node *node)
+{
+	ut_node *sibling = NULL, *child = NULL;
+	if (!node)
+		return;
+
+	while (node) {
+		sibling = NULL;
+		if (node->sibling.n)	
+			sibling = ut_container_of(node->sibling.n, ut_node, sibling);
+		__ut_node_free(root, node);
+		node = sibling;
+	}
 	return;
 }
 
@@ -155,10 +173,13 @@ static inline void ut_tree_release(ut_root *root)
 	if (!root)
 		return;
 
-	ut_node_free(root, root->node);
+	if (root->node)
+		ut_node_free(root, root->node);
 #ifdef UT_HASH_CACHE
-	printf("uthash node count:%d\n", root->hash->node_cnt);
-	uthash_release(root->hash);
+	if (root->hash) {
+		//printf("uthash node count:%d\n", root->hash->node_cnt);
+		uthash_release(root->hash);
+	}
 #endif
 	UT_FREE(root);
 	return;
@@ -169,11 +190,6 @@ static inline void ut_tree_release(ut_root *root)
 ut_root *ut_tree_create();
 
 /* ==================== action ====================== */
-static inline int ut_delete()
-{
-	return 0;
-}
-
 static inline ut_node *__ut_level_search(ut_node *node, char *str, int len)
 {
 	ut_node *bak = node;
@@ -461,15 +477,56 @@ static inline void ut_node_dump(ut_node *node, int *cnt, int *max_child)
 static inline void ut_tree_dump(ut_root *root)
 {
 	int total = 0, max_child = 0;
-	if (!root || !root->node)
+	if (!root)
 		return;
 
-	ut_node_dump(root->node, &total, &max_child);
-	printf("total node:%d, max_child:%d\n", total, max_child);
+	if (root->node) 
+		ut_node_dump(root->node, &total, &max_child);
 #ifdef UT_HASH_CACHE
-	uthash_dump(root->hash);
+	if (root->hash)
+		uthash_dump(root->hash);
 #endif
+	printf("total node:%d, max_child:%d\n", total, max_child);
 	return;
 }
+
+static inline int __ut_delete(ut_root *root, ut_node *node)
+{
+	ut_node *parent;
+	if (!root || !node)
+		return -1;
+
+	__ut_node_free(root, node);
+	
+	if (root->node == node) {
+		root->node = NULL;
+	}
+
+	return 0;
+}
+
+static inline int ut_delete(ut_root *root, char *str, int len)
+{
+	ut_node *node, *parent = NULL;
+	int left;
+	char *str_head = str;
+
+	if (!root || !str || len <= 0)
+		return -1;
+
+	node = ut_level_search(root->node, str, len, str_head, &parent, &left);
+	if (!node) {
+		ut_dbg("delete node not found for %s\n", str);
+		return -1;
+	}
+	if (__ut_delete(root, node)) {
+		ut_err("node delete failed(len:%d): %s\n", len, str);
+		return -1;
+	}
+
+	return 0;
+}
+
+
 
 #endif

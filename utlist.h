@@ -12,8 +12,8 @@
 #include <assert.h>
 
 typedef struct utlist {
+	struct utlist	*n;	/* must be first as ulist_head_t */
 	struct utlist	*p;	/* previous element */
-	struct utlist	*n;	/* next element */
 } utlist_t;
 
 typedef struct utlist_head_t {
