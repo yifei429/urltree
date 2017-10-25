@@ -146,7 +146,7 @@ int ucb_tree_search(ucb_tree *t, struct urlpath *head)
 {
 	int ret = 0;
 	struct urlpath *bak = head;
-	int i = 0, max = 1;
+	int i = 0, max = 10000;
 	long total_search = 0, total_time  =0;;
 	struct  timeval  start, end;
 
@@ -172,6 +172,7 @@ int ucb_tree_search(ucb_tree *t, struct urlpath *head)
 	return 0;
 }
 
+extern int max_depth;
 int main(int argc, char **argv)
 {
 	struct urlpath *head = NULL, *bak;	
@@ -210,10 +211,11 @@ int main(int argc, char **argv)
 	printf("==> memory stats\n");
 	malloc_stats();
 
-	url_path_dump(head);
-	ucb_tree_dump(tree);
+	//url_path_dump(head);
+	//ucb_tree_dump(tree);
 	ucb_tree_search(tree, head);
 	
+	printf("max depth is :%d\n", max_depth);
 out:
 	if (tree)
 		ucb_tree_release(tree);

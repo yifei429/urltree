@@ -56,7 +56,7 @@ typedef struct utlist_head_t {
 
 #define ut_err(fmt, args...) printf("<%s:%d> "fmt, __FILE__, __LINE__, ##args)
 
-#define UT_DEBUG 1
+//#define UT_DEBUG 1
 #ifdef UT_DEBUG 
 #define ut_dbg(fmt, args...) printf("<%s:%d> "fmt, __FILE__, __LINE__, ##args)
 #else 

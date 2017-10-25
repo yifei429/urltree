@@ -146,7 +146,7 @@ int ut_tree_search(ut_root *root, struct urlpath *head)
 {
 	int ret = 0;
 	struct urlpath *bak = head;
-	int i = 0, max = 10000;
+	int i = 0, max = 100000;
 	long total_search = 0, total_time  =0;;
 	struct  timeval  start, end;
 
