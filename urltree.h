@@ -17,7 +17,7 @@
 #include "utlist.h"
 
 
-#define UT_HASH_CACHE	1
+//#define UT_HASH_CACHE	1
 #ifdef UT_HASH_CACHE
 #define UT_HASH_CACHE_LEAF	1
 #endif
@@ -76,8 +76,10 @@ static inline void __ut_node_leaffree(ut_node *node)
 		return;
 	if (node->str)
 		UT_FREE(node->str);
+#ifdef UT_HASH_CACHE_LEAF 
 	if (node->allstr)
 		UT_FREE(node->allstr);
+#endif
 	UT_FREE(node);
 
 	return;
