@@ -25,7 +25,7 @@ typedef struct _urltree_args {
 } ut_args;
 
 
-static inline void ut_release_arg(ut_argitem *item)
+static inline void __ut_release_argitem(ut_argitem *item)
 {
 	if (!item)
 		return;
@@ -36,7 +36,7 @@ static inline void ut_release_arg(ut_argitem *item)
 	return;
 }
 
-static inline ut_argitem* ut_create_arg(ut_args *args, char *name, int len)
+static inline ut_argitem* ut_create_argitem(ut_args *args, char *name, int len)
 {
 	ut_argitem *item;
 	if (unlikely(!args || !name || len <= 0)) {
@@ -62,7 +62,7 @@ static inline ut_argitem* ut_create_arg(ut_args *args, char *name, int len)
 	return item;
 
 failed:
-	ut_release_arg(item);
+	__ut_release_argitem(item);
 	return NULL;
 }
 
@@ -99,7 +99,7 @@ static inline ut_argitem* ut_get_arg(ut_args *args, char *name, int len)
 	return item;
 }
 
-static inline void ut_put_arg(ut_argitem *item)
+static inline void ut_release_argitem(ut_argitem *item)
 {
 	int ref = 0;
 	if (unlikely(!item)) {
@@ -108,8 +108,42 @@ static inline void ut_put_arg(ut_argitem *item)
 	ref = __sync_sub_and_fetch(&item->ref, 1);
 	assert(ref >= 0);
 	if (ref == 0) {
-		ut_release_arg(item);
+		__ut_release_argitem(item);
 	}
+	return;
+}
+
+
+static inline void ut_put_arg(ut_argitem *item)
+{
+	ut_release_argitem(item);
+	return;
+}
+
+static inline int ut_init_args(ut_args *args)
+{
+	if (unlikely(args))
+		return -1;
+
+	UTLIST_HINIT(&args->head);
+	return 0;
+}
+
+static inline void ut_release_args(ut_args *args) 
+{
+	utlist_t *list;
+	ut_argitem *item;
+	if (!args)
+		return;
+
+	list = args->head.n;
+	while(list) {
+		item = UTLIST_ELEM(list, typeof(item), list);
+		list = list->n;
+		UTLIST_DEL(&args->head, &item->list);
+		ut_release_argitem(item);
+	}
+		
 	return;
 }
 
@@ -132,13 +166,9 @@ static inline int ut_arg_add_m(ut_args *args, char *name, int len, void *m)
 	}
 	ut_dbg("change arg's module\n");
 	UTLIST_DEL(&args->head, &item->list);
-	ref = __sync_sub_and_fetch(&item->ref, 1);
-	assert(ref >= 0);
-	if (ref == 0) {
-		ut_release_arg(item);
-	}
+	ut_release_argitem(item);
 
-	item = ut_create_arg(args, name, len);
+	item = ut_create_argitem(args, name, len);
 	if (!item) {
 		ut_err("replace arg module failed\n");
 	}
