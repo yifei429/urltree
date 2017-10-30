@@ -125,6 +125,7 @@ struct urlpath *read_url_path(char *filename, int *cnt)
 ut_root *insert_tree(ut_root *root, struct urlpath *head)
 {
 	struct  timeval  start, end;
+	ut_node *node;
 
 	gettimeofday(&start,NULL);
 	if (!root) {
@@ -132,7 +133,11 @@ ut_root *insert_tree(ut_root *root, struct urlpath *head)
 		return NULL;
 	}
 	while(head) {
-		ut_insert(root, head->str, head->str_len);
+		node = ut_insert(root, head->str, head->str_len);
+		if (node)
+			ut_node_put(node);
+		else 
+			printf("insert node failed\n");
 		head = head->next;
 	}
 
@@ -148,15 +153,17 @@ int ut_tree_search(ut_root *root, struct urlpath *head)
 	int i = 0, max = MAX_SEARCH_TIME;
 	long total_search = 0, total_time  =0;;
 	struct  timeval  start, end;
+	ut_node *node;
 
 	gettimeofday(&start,NULL);
 	for( i = 0; i < max; i++) {
 		head = bak;
 		while (head) {
-			ret = ut_search(root, head->str, head->str_len);
-			if (ret <= 0) {
+			node = ut_search(root, head->str, head->str_len);
+			if (!node) {
 				printf("unknown url %s\n", head->str);
 			} else {
+				ut_node_put(node);
 				//printf("find url level:%d, url:%s\n", ret, head->str);
 			}
 			head = head->next;
@@ -245,8 +252,8 @@ int main(int argc, char **argv)
 	printf("[mallinfo]\n");
 	display_usedmem(&mstart, &mend);
 
-	url_path_dump(head);
-	ut_tree_dump(root);
+	//url_path_dump(head);
+	//ut_tree_dump(root);
 	ut_tree_search(root, head);
 	
 	printf("sizeof(utnode_head_t) is :%ld, bucket:%ld\n", 

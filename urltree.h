@@ -18,7 +18,7 @@
 #include "urltree_args.h"
 
 
-#define UT_HASH_CACHE	1
+//#define UT_HASH_CACHE	1
 //#define UT_HASH_CACHE_LEAF	1	/* can't open, as all intermediate node may be leaf */
 
 #if 0
@@ -36,6 +36,7 @@ typedef struct _ut_node {
 	utlist_t	hash_list;
 #endif
 	struct _ut_node *parent;
+	unsigned int 	ref;
 	unsigned short level;
 	unsigned short str_len;	/* less than 65535 */
 	unsigned char leaf:1;
@@ -58,19 +59,27 @@ typedef struct _ut_root {
 ut_root *ut_tree_create();
 static inline void ut_tree_release(ut_root *root);
 
-int ut_search(ut_root *root, char *str, int len);
-int ut_flush2db(ut_root *root);
+/* must call ut_node_put after search */
+ut_node* ut_search(ut_root *root, char *str, int len);
+/* must call ut_node_put after insert */
 static inline ut_node* ut_insert(ut_root *root, char *str, int len);
+
 static inline int ut_delete(ut_root *root, char *str, int len);
 static inline void ut_tree_dump(ut_root *root);
+int ut_flush2db(ut_root *root);
 
+static inline void ut_node_put(ut_node *node);
 
 
 
 
 static inline void __ut_node_leaffree(ut_node *node)
 {
+	int ref = 0;
 	if (!node)
+		return;
+	ref = __sync_sub_and_fetch(&node->ref, 1);
+	if (ref > 0)
 		return;
 	if (node->str)
 		UT_FREE(node->str);
@@ -80,6 +89,19 @@ static inline void __ut_node_leaffree(ut_node *node)
 	UT_FREE(node);
 
 	return;
+}
+
+static inline void ut_node_put(ut_node *node)
+{
+	__ut_node_leaffree(node);
+}
+
+static inline int __ut_node_get(ut_node *node)
+{
+	if (!node)
+		return -1;
+	 __sync_add_and_fetch(&node->ref, 1);
+	return 0;
 }
 
 static inline ut_node *ut_node_create(char *str, unsigned short level, 
@@ -101,6 +123,7 @@ static inline ut_node *ut_node_create(char *str, unsigned short level,
 	UTLIST_HINIT(&node->child);
 	node->leaf = leaf;
 	ut_init_args(&node->args);
+	__sync_add_and_fetch(&node->ref, 1);
 
 	if (str) {
 		node->str = UT_MALLOC(size + 1);
@@ -117,7 +140,9 @@ failed:
 	return NULL;
 }
 
+/* must be called in lock */
 static inline void ut_node_free(ut_root *root, ut_node *node);
+/* must be called in lock */
 static inline void __ut_node_free(ut_root *root, ut_node *node) 
 {
 	ut_node *child = NULL;
@@ -145,6 +170,7 @@ static inline void __ut_node_free(ut_root *root, ut_node *node)
 	return;
 }
 
+/* must be called in lock */
 static inline void ut_node_free(ut_root *root, ut_node *node)
 {
 	ut_node *sibling = NULL, *child = NULL;
@@ -426,6 +452,9 @@ static inline ut_node* ut_insert(ut_root *root, char *str, int len)
 		goto out;
 	}
 out:
+	if (node) {
+		__ut_node_get(node);
+	}
 	pthread_rwlock_unlock(&root->lock);
 	return node;
 }

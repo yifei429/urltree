@@ -104,20 +104,19 @@ failed:
 /*
  * Return: return the tree level of the str; 0 for not found	
  */
-int ut_search(ut_root *root, char *str, int len)
+ut_node* ut_search(ut_root *root, char *str, int len)
 {
 	ut_node *node, *parent = NULL;
 	char *ptr, *end;
-	int left = 0, ret = 0;
+	int left = 0;
 	if (!root || !str || len <= 0)
-		return -1;
+		return NULL;
 
 	pthread_rwlock_rdlock(&root->lock);
 #ifdef UT_HASH_CACHE
 	node = ut_hash_search(root, str, len, 0, str, 0);
 	if (node) {
 		//printf("find node in hash\n");
-		ret = node->level;
 		goto out;
 	} else {
 		//printf("=========no node in hash\n");
@@ -129,13 +128,15 @@ int ut_search(ut_root *root, char *str, int len)
 	if (node) {
 		/* in rwlock, and don't add to leaf hash */
 		node->leaf = 1;
-		ret = node->level;
 		goto out;
 	}
-
+	node = NULL;
 out:
+	if (node) {
+		__ut_node_get(node);
+	}
 	pthread_rwlock_unlock(&root->lock);
-	return ret;
+	return node;
 }
 
 
