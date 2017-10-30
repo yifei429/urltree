@@ -15,20 +15,7 @@
 #ifdef UT_HASH_CACHE
 static unsigned int ut_elfhash(int seed, char *k, int len)
 {
-#if 0
-        unsigned int h = seed, g = 0;
-        while(len > 0)
-        {
-                h=(h<<4)+*k++;
-		if ((g = (h & 0xF0000000L)) != 0) {
-                	h ^= (g>>24);
-                	h &= ~g;
-		}
-		len--;
-        }
-        //return (h & 0x7FFFFFFF);
-	return h;
-#endif
+	/* hash is used interation*/
     	register unsigned int hash = seed;  
     	while (len > 0){         
         	hash = hash * 131 + *k++; 
@@ -68,12 +55,8 @@ static inline unsigned int uth_keyfind(utnode_info *info, int bucket_cnt)
 static inline unsigned int uth_keyadd(utlist_t *item, int bucket_cnt)
 {
 	ut_node *node = UTLIST_ELEM(item, typeof(node), hash_list);
-#ifdef UT_HASH_CACHE_LEAF
-	node->hash_key = ut_elfhash(0, node->allstr, node->allstr_len); 
-#else
 	node->hash_key = ut_elfhash(node->parent? node->parent->hash_key : 0, 
 		node->str, node->str_len); 
-#endif
 	//printf("Add, add node, parent  key:%u, node key:%u, len:%d, str:%s\n", 
 	//	node->parent? node->parent->hash_key: 0, node->hash_key, node->str_len, node->str);
 	return node->hash_key % bucket_cnt;
@@ -125,27 +108,19 @@ int ut_search(ut_root *root, char *str, int len)
 {
 	ut_node *node, *parent = NULL;
 	char *ptr, *end;
-	char *str_node = str;
 	int left = 0, ret = 0;
 	if (!root || !str || len <= 0)
 		return -1;
 
 	pthread_rwlock_rdlock(&root->lock);
 #ifdef UT_HASH_CACHE
-#ifdef UT_HASH_CACHE_LEAF 
-#else
-	str_node = ut_last_node(str, len);
-	if (!str_node) {
-		ut_err("wrong url str(len:%d):%s, must start with slash \n", len, str);
-		ret = -1;
-		goto out;
-	}
-#endif
-	node = ut_hash_search(root, str_node, len - (str_node -str), 0, str, 
-		ut_elfhash(0, str, str_node - str));
+	node = ut_hash_search(root, str, len, 0, str, 0);
 	if (node) {
+		//printf("find node in hash\n");
 		ret = node->level;
 		goto out;
+	} else {
+		//printf("=========no node in hash\n");
 	}
 
 #endif
@@ -161,6 +136,12 @@ int ut_search(ut_root *root, char *str, int len)
 out:
 	pthread_rwlock_unlock(&root->lock);
 	return ret;
+}
+
+
+int ut_flush2db(ut_root *root)
+{
+	return 0;
 }
 
 
