@@ -358,6 +358,10 @@ static inline ut_node* __ut_node_insert(ut_root *root, ut_node *parent,
 	if (!str || len <=0 )
 		return NULL;
 
+	if (root->total_node >= MAX_NODES) {
+		ut_log("reach max node(%d) limit\n", MAX_NODES);
+		return NULL;
+	}
 	if (parent)
 		level = parent->level + 1;
 	node = ut_node_create(str, level, len, str_head, leaf);

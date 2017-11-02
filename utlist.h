@@ -54,6 +54,8 @@ typedef struct utlist_head_t {
 
 
 
+#define MAX_NODES	10000
+#define ut_log(fmt, args...) printf("[LOG]<%s:%d> "fmt, __FILE__, __LINE__, ##args)
 #define ut_err(fmt, args...) printf("<%s:%d> "fmt, __FILE__, __LINE__, ##args)
 
 //#define UT_DEBUG 1
@@ -62,7 +64,7 @@ typedef struct utlist_head_t {
 #define ut_dbg(fmt, args...) printf("<%s:%d> "fmt, __FILE__, __LINE__, ##args)
 #else 
 #define ut_dbg(fmt, args...) 
-#define MAX_SEARCH_TIME 10000
+#define MAX_SEARCH_TIME 10
 #endif
 
 #ifndef unlikely
