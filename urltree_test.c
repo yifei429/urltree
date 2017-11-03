@@ -129,7 +129,7 @@ ut_root *insert_tree(ut_root *root, struct urlpath *head)
 
 	gettimeofday(&start,NULL);
 	if (!root) {
-		ut_err("create ut tree failed\n");
+		ut_dbg(UT_DEBUG_ERR,"create ut tree failed\n");
 		return NULL;
 	}
 	while(head) {

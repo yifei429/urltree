@@ -60,14 +60,14 @@ static inline ut_argitem* __ut_create_argitem(ut_args *args, char *name, int len
 
 	item = UT_MALLOC(sizeof(ut_argitem));
 	if (!item) {
-		ut_err("create urltree arg failed\n");
+		ut_dbg(UT_DEBUG_ERR,"create urltree arg failed\n");
 		return NULL;
 	}
 	memset(item, 0x0, sizeof(ut_argitem));
 
 	item->name = UT_MALLOC(len + 1);
 	if (!item->name) {
-		ut_err("create arg name failed\n");
+		ut_dbg(UT_DEBUG_ERR,"create arg name failed\n");
 		goto failed;
 	}
 	memcpy(item->name, name, len);
@@ -126,13 +126,13 @@ static inline ut_argitem* ut_insert_arg(ut_args *args, char *name, int len)
 	pthread_rwlock_wrlock(&args->lock);
 	item = __ut_find_arg(args, name, len);
 	if (item) {
-		ut_err("arg already exist\n");
+		ut_dbg(UT_DEBUG_ERR,"arg already exist\n");
 		goto out;
 	}
 
 	item = __ut_create_argitem(args, name, len);
 	if (!item) {
-		ut_err("replace arg module failed\n");
+		ut_dbg(UT_DEBUG_ERR,"replace arg module failed\n");
 		goto out;
 	}
 
@@ -169,7 +169,7 @@ static inline int ut_init_args(ut_args *args)
 
 	UTLIST_HINIT(&args->head);
 	if(pthread_rwlock_init(&args->lock, NULL)) {
-		ut_err("pthread init failed for args\n");
+		ut_dbg(UT_DEBUG_ERR,"pthread init failed for args\n");
 		return -1;
 	}
 	return 0;
@@ -207,7 +207,7 @@ static inline int ut_arg_add_m(ut_args *args, char *name, int len, void *m)
 	pthread_rwlock_wrlock(&args->lock);
 	item = __ut_find_arg(args, name, len);
 	if (!item) {
-		ut_err("no args found for the module\n");
+		ut_dbg(UT_DEBUG_ERR,"no args found for the module\n");
 		ret = -1;
 		goto out;
 	}
@@ -216,13 +216,13 @@ static inline int ut_arg_add_m(ut_args *args, char *name, int len, void *m)
 		ret = 0;
 		goto out;
 	}
-	ut_dbg("change arg's module\n");
+	ut_dbg(UT_DEBUG_INFO, "change arg's module\n");
 	UTLIST_DEL(&args->head, &item->list);
 	ut_release_argitem(item);
 
 	item = __ut_create_argitem(args, name, len);
 	if (!item) {
-		ut_err("replace arg module failed\n");
+		ut_dbg(UT_DEBUG_ERR,"replace arg module failed\n");
 		goto out;
 	}
 	item->m = m;
@@ -243,7 +243,7 @@ static inline int ut_arg_del_m(ut_args *args, char *name, int len, void *m)
 	pthread_rwlock_wrlock(&args->lock);
 	item = __ut_find_arg(args, name, len);
 	if (!item) {
-		//ut_err("no args found for the module\n");
+		//ut_dbg(UT_DEBUG_ERR,"no args found for the module\n");
 		goto out;
 	}
 	if (!item->m) {

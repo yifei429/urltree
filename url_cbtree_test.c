@@ -129,7 +129,7 @@ ucb_tree *init_cbtree(struct urlpath *head)
 	gettimeofday(&start,NULL);
 	t = ucb_tree_create();
 	if (!t) {
-		ut_err("create ut tree failed\n");
+		ut_dbg(UT_DEBUG_ERR,"create ut tree failed\n");
 		return NULL;
 	}
 	while(head) {

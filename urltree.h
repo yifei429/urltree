@@ -114,7 +114,7 @@ static inline ut_node *ut_node_create(char *str, unsigned short level,
 
 	node = UT_MALLOC(sizeof(ut_node));
 	if (!node) {
-		ut_err("urltree create node failed\n");	
+		ut_dbg(UT_DEBUG_ERR, "urltree create node failed\n");	
 		return NULL;
 	}
 	memset(node, 0x0, sizeof(ut_node));
@@ -155,12 +155,13 @@ static inline void __ut_node_free(ut_root *root, ut_node *node)
 	}
 #ifdef UT_HASH_CACHE
 	if (uthash_del(root->hash, &node->hash_list)) {
-		ut_err("del hash cache failed\n");
+		ut_dbg(UT_DEBUG_ERR, "del hash cache failed\n");
 	}
 #endif
+	ut_dbg(UT_DEBUG_TRACE, "delete %d(ref:%d):%s from parent(child:%d):%d:%s\n", 
+		node->str_len, node->ref, node->str, node->parent? UTLIST_HLEN(&node->parent->child):0,
+		node->parent? node->parent->str_len: 0, node->parent? node->parent->str:NULL);
 	if (node->parent) {
-		ut_dbg("delete %d:%s from parent(child:%d):%d:%s\n", 
-			node->str_len, node->str, UTLIST_HLEN(&node->parent->child),node->parent->str_len, node->parent->str);
 		assert(!UTLIST_IS_UNLINK(&node->sibling));
 		UTLIST_DEL(&node->parent->child, &node->sibling);
 	}
@@ -193,13 +194,14 @@ static inline void ut_tree_release(ut_root *root)
 		return;
 
 	pthread_rwlock_wrlock(&root->lock);
+	ut_dbg(UT_DEBUG_INFO, "node tree release, node count:%d\n", root->total_node);
 	if (root->node) {
 		ut_node_free(root, root->node);
 		root->node = NULL;
 	}
 #ifdef UT_HASH_CACHE
 	if (root->hash) {
-		//printf("uthash node count:%d\n", root->hash->node_cnt);
+		ut_dbg(UT_DEBUG_INFO, "uthash node count:%d\n", root->hash->node_cnt);
 		uthash_release(root->hash);
 		root->hash = NULL;
 	}
@@ -218,7 +220,7 @@ static inline ut_node *__ut_level_search(ut_node *node, char *str, int len)
 {
 	ut_node *bak = node;
 	while (node) {
-		ut_dbg("search node: level %d, str(len:%d):%s\n", 
+		ut_dbg(UT_DEBUG_TRACE, "search node: level %d, str(len:%d):%s\n", 
 		node->level, node->str_len, node->str);
 		if (node->str_len == len && memcmp(node->str, str, len) == 0) {
 			break;
@@ -245,20 +247,20 @@ static inline ut_node *ut_level_search(ut_node *node, char *str, int len,
 	while(node) {
 		ptr = str;
 		end = ut_str_slash(str, len);
-		ut_dbg("search level node->level %d, for str(len:%d):%s\n",
+		ut_dbg(UT_DEBUG_TRACE, "search level node->level %d, for str(len:%d):%s\n",
 			node->level, end -ptr, ptr);
 		node = __ut_level_search(node, ptr, end - ptr);
 		if (!node || len - (end -ptr) <=  0) {
 			break;
 		}
 		*parent = node;
-		ut_dbg("search level reuslt,parent(cnt:%d,level:%d:%s), for str(len:%d):%s\n",
+		ut_dbg(UT_DEBUG_TRACE, "search level reuslt,parent(cnt:%d,level:%d:%s), for str(len:%d):%s\n",
 			UTLIST_HLEN(&(*parent)->child),(*parent)->level, (*parent)->str, end -ptr, ptr);
 		str = end;
 		len = len - (end-ptr);
 		*left = len;
 		if (UTLIST_IS_HEMPTY(&node->child)) {
-			ut_dbg("search over, no child for node:(level:%d,str:%s)\n",
+			ut_dbg(UT_DEBUG_TRACE, "search over, no child for node:(level:%d,str:%s)\n",
 				node->level, node->str);
 			node = NULL;
 			break;
@@ -276,7 +278,7 @@ static inline int ut_hash_confict(ut_node *node,
 	if (!node)
 		return 0;
 
-	ut_dbg("hash confilct: len:%d, node len:%d, str:%s, nodestr:%s,level:%d,nodelevel:%d)\n",
+	ut_dbg(UT_DEBUG_TRACE, "hash confilct: len:%d, node len:%d, str:%s, nodestr:%s,level:%d,nodelevel:%d)\n",
 		len, node->str_len, str, node->str, level, node->level);
 
 	if (level && (node->str_len != len || node->level != level))
@@ -293,7 +295,7 @@ static inline int ut_hash_confict(ut_node *node,
 	} while (node);
 
 	if (!node && str_head == str) {
-		ut_dbg("find cache node(len:%d), str:%s\n",
+		ut_dbg(UT_DEBUG_INFO, "find cache node(len:%d), str:%s\n",
 			node->str_len, node->str);
 		return 1;
 	}
@@ -309,7 +311,7 @@ static inline ut_node* ut_hash_search(ut_root *root,
 	ut_node *node;
 	int i = 0;
 	if (!root->hash || !str || len < 0) {
-		ut_err("wrong args for uthash search\n");
+		ut_dbg(UT_DEBUG_ERR, "wrong args for uthash search\n");
 		return NULL;
 	}
 	//memset(&info, 0x0, sizeof(utnode_info));
@@ -320,14 +322,14 @@ static inline ut_node* ut_hash_search(ut_root *root,
 	list = uthash_find(root->hash, &info);
 	while(list) {
 		node = UTLIST_ELEM(list, typeof(node), hash_list);
-		ut_dbg("hash found node:(len:%d,leaf:%d,str:%s), allstr:%s\n", 
+		ut_dbg(UT_DEBUG_INFO, "hash found node:(len:%d,leaf:%d,str:%s), allstr:%s\n", 
 			node->str_len, node->leaf, node->str, str_head);
 		if (ut_hash_confict(node, str, len, level, str_head) > 0) {
 			return node;
 		}
 		i++;
-		//if (i > 5)
-		//	printf("confict =====\n");
+		if (i > 3 && (i%3)== 0)
+			ut_dbg(UT_DEBUG_WARNING, "confict count:%d\n",i);
 		list = list->n;
 	}
 
@@ -359,6 +361,7 @@ static inline ut_node* __ut_node_insert(ut_root *root, ut_node *parent,
 		return NULL;
 
 	if (root->total_node >= MAX_NODES) {
+		ut_dbg(UT_DEBUG_ALERT, "reach max node(%d) limit\n", MAX_NODES);
 		ut_log("reach max node(%d) limit\n", MAX_NODES);
 		return NULL;
 	}
@@ -366,10 +369,10 @@ static inline ut_node* __ut_node_insert(ut_root *root, ut_node *parent,
 		level = parent->level + 1;
 	node = ut_node_create(str, level, len, str_head, leaf);
 	if (!node) {
-		ut_err("create node failed\n");
+		ut_dbg(UT_DEBUG_ERR, "create node failed\n");
 		return NULL;	
 	}
-	ut_dbg("[node] new node(level:%d,str:%s,parent:%s)\n", 
+	ut_dbg(UT_DEBUG_INFO, "[node] new node(level:%d,str:%s,parent:%s)\n", 
 		node->level, node->str, parent? parent->str: NULL);
 	if (parent) {
 		UTLIST_ADD(&parent->child, &node->sibling);
@@ -377,7 +380,7 @@ static inline ut_node* __ut_node_insert(ut_root *root, ut_node *parent,
 	}
 #ifdef UT_HASH_CACHE
 	if (uthash_add(root->hash, &node->hash_list)) {
-		ut_err("insert to hash failed\n");
+		ut_dbg(UT_DEBUG_ERR, "insert to hash failed\n");
 	}
 #endif
 	root->total_node++;
@@ -401,14 +404,14 @@ static inline ut_node* ut_node_insert(ut_root *root,
 	while(len > 0) {
 		ptr = str;
 		end = ut_str_slash(str, len);
-		ut_dbg("insert to parent(child:%d,level:%d:%s), %s\n", 
+		ut_dbg(UT_DEBUG_TRACE, "insert to parent(child:%d,level:%d:%s), %s\n", 
 			parent? UTLIST_HLEN(&parent->child):0, parent?parent->level:0, 
 			parent?parent->str:NULL, ptr);
 
 		node = __ut_node_insert(root, parent, ptr, 
 			end - ptr, str_head, len == (end-ptr));
 		if (!node) {
-			ut_err("create node failed\n");
+			ut_dbg(UT_DEBUG_ERR, "create node failed\n");
 			return NULL;	
 		}
 		if (unlikely(!root->node))
@@ -436,22 +439,22 @@ static inline ut_node* ut_insert(ut_root *root, char *str, int len)
 		return NULL;
 
 	if (!str || len <= 0 || str[0] != 47) {
-		ut_err("url must start with /\n");
+		ut_dbg(UT_DEBUG_ERR, "url must start with /\n");
 		return NULL;
 	}
 	pthread_rwlock_wrlock(&root->lock);
-	ut_dbg("[start] insert,search first,(len:%d)%s\n", len, str);
+	ut_dbg(UT_DEBUG_TRACE, "[start] insert,search first,(len:%d)%s\n", len, str);
 	node = ut_level_search(root->node, str, len, str_head, &parent, &left);
 	if (node) {
-		ut_dbg("str(%s) already exist\n", str);
+		ut_dbg(UT_DEBUG_ERR, "str(%s) already exist\n", str);
 		goto out;
 	}
-	ut_dbg("start insert, not found, insert now, parent:(level:%d:%s) for (len:%d)%s\n", 
+	ut_dbg(UT_DEBUG_TRACE, "start insert, not found, insert now, parent:(level:%d:%s) for (len:%d)%s\n", 
 		parent?parent->level:0, parent?parent->str:NULL, len, str);
 
 	node = ut_node_insert(root, str_head, parent, str + len - left, left);
 	if (!node) {
-		ut_err("insert node(str:%s) failed\n", str);
+		ut_dbg(UT_DEBUG_ERR, "insert node(str:%s) failed\n", str);
 		ret = -1;
 		goto out;
 	}
@@ -476,14 +479,14 @@ static inline void ut_node_dump(ut_node *node, int *cnt, int *max_child)
 		child = ut_container_of(node->child.n, ut_node, sibling);
 
 	for (i = 0; i < node->level - 1; i++) {
-		printf("\t");
+		ut_dbg(UT_DEBUG_TRACE, "\t");
 	}
 #ifdef UT_HASH_CACHE
-	printf("%d(child:%d, sibling:%p, hash:%u, leaf:%d):%s\n", 
+	ut_dbg(UT_DEBUG_TRACE, "%d(child:%d, sibling:%p, hash:%u, leaf:%d):%s\n", 
 		node->level, UTLIST_HLEN(&node->child), 
 		sibling, node->hash_key, node->leaf, node->str);
 #else 
-	printf("%d(child:%d, sibling:%p, leaf:%d):%s\n", 
+	ut_dbg(UT_DEBUG_TRACE, "%d(child:%d, sibling:%p, leaf:%d):%s\n", 
 		node->level, UTLIST_HLEN(&node->child), 
 		sibling, node->leaf, node->str);
 #endif
@@ -513,7 +516,7 @@ static inline void ut_tree_dump(ut_root *root)
 	if (root->hash)
 		uthash_dump(root->hash);
 #endif
-	printf("total node:%d, max_child:%d\n", total, max_child);
+	ut_dbg(UT_DEBUG_INFO, "total node:%d, max_child:%d\n", total, max_child);
 	pthread_rwlock_unlock(&root->lock);
 	return;
 }
@@ -546,12 +549,12 @@ static inline int ut_delete(ut_root *root, char *str, int len)
 	pthread_rwlock_wrlock(&root->lock);
 	node = ut_level_search(root->node, str, len, str_head, &parent, &left);
 	if (!node) {
-		ut_dbg("delete node not found for %s\n", str);
+		ut_dbg(UT_DEBUG_INFO, "delete node not found for %s\n", str);
 		ret = -1;
 		goto out;;
 	}
 	if (__ut_delete(root, node)) {
-		ut_err("node delete failed(len:%d): %s\n", len, str);
+		ut_dbg(UT_DEBUG_ERR, "node delete failed(len:%d): %s\n", len, str);
 		ret = -1;
 		goto out;
 	}

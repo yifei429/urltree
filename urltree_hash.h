@@ -58,7 +58,7 @@ static inline uthash_t* uthash_init(int size, int thread_safe,
         if (size <=0 || !keyfind || !keyadd )
                 return NULL;
 	if (!compare && thread_safe) {
-		ut_err("item confict treate out of hash, no threa safe support\n");
+		ut_dbg(UT_DEBUG_ERR, "item confict treate out of hash, no threa safe support\n");
 		return NULL;
 	}
 
@@ -73,7 +73,7 @@ static inline uthash_t* uthash_init(int size, int thread_safe,
         if (hash->thread_safe) {
                 for (i = 0; i < size; i++) {
                         if (pthread_rwlock_init(&hash->table[i].lock, NULL) != 0) {
-                                printf("init id hash lock failed.\n");
+                                ut_dbg(UT_DEBUG_ERR, "init id hash lock failed.\n");
                                 goto failed;
                         }
                 }
@@ -113,20 +113,18 @@ static inline int uthash_add(uthash_t *hash, utlist_t *item)
 	if (hash->thread_safe)
 		pthread_rwlock_wrlock(&head->lock);
 	UTLIST_ADD(&head->head, item);
-	#if 1
 	if (UTLIST_HLEN(&head->head) > 3) {
-		printf("======> hash confict(%d) more than 3.\n",
+		ut_dbg(UT_DEBUG_WARNING, "======> hash confict(%d) more than 3.\n",
 			UTLIST_HLEN(&head->head));
 		utlist_t *item1 = NULL;
         	item1 = head->head.n;
         	while(item1) {
-			printf("\t");
+			ut_dbg(UT_DEBUG_INFO, "\t");
 			hash->dbg(item1);
-			printf("\n");
+			ut_dbg(UT_DEBUG_INFO, "\n");
                 	item1 = item1->n;
         	}
 	}
-	#endif
 	hash->node_cnt++;
 	if (hash->thread_safe)
 		pthread_rwlock_unlock(&head->lock);
@@ -143,7 +141,7 @@ static inline int uthash_del(uthash_t *hash, utlist_t *item)
                 return -1;
 
 	if (UTLIST_IS_UNLINK(item)) {
-		ut_err("item is not linked in hash\n");
+		ut_dbg(UT_DEBUG_ERR, "item is not linked in hash\n");
 		return -1;
 	}
 
@@ -207,7 +205,7 @@ static inline void uthash_release(uthash_t *hash)
 		return;
 
 	if (hash->node_cnt > 0)
-		ut_err("release hash with nodes\n");	
+		ut_dbg(UT_DEBUG_ERR, "release hash with nodes\n");	
 	assert(hash->node_cnt == 0);
 
 	UT_FREE(hash);
@@ -239,7 +237,7 @@ static inline void uthash_dump(uthash_t *hash)
 			pthread_rwlock_unlock(&head->lock);
 	}
 
-	printf("hash node count:%d\n", hash->node_cnt);
+	ut_dbg(UT_DEBUG_INFO, "hash node count:%d\n", hash->node_cnt);
 	return;
 }
 

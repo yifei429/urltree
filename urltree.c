@@ -69,7 +69,7 @@ ut_root *ut_tree_create()
 	ut_root *root;
 	root = UT_MALLOC(sizeof(ut_root));
 	if(!root) {
-		ut_err("urltree create failed\n");	
+		ut_dbg(UT_DEBUG_ERR,"urltree create failed\n");	
 		return NULL;
 	}
 	memset(root, 0x0, sizeof(ut_root));
@@ -86,12 +86,12 @@ ut_root *ut_tree_create()
 		goto failed;
 
 	if (root->node && uthash_add(root->hash, &root->node->hash_list)) {
-		ut_err("insert root / dir to hash failed\n");
+		ut_dbg(UT_DEBUG_ERR,"insert root / dir to hash failed\n");
 		goto failed;
 	}
 #endif
 	if(pthread_rwlock_init(&root->lock, NULL)) {
-		ut_err("pthread init failed for tree\n");
+		ut_dbg(UT_DEBUG_ERR,"pthread init failed for tree\n");
 		goto failed;
 	}
 
