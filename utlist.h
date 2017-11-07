@@ -10,6 +10,7 @@
 
 
 #include <assert.h>
+#include <string.h>
 
 typedef struct utlist {
 	struct utlist	*n;	/* must be first as ulist_head_t */
@@ -108,7 +109,37 @@ static inline char *ut_str_slash(char *str, int len)
 	return str + len;
 }
 
+typedef struct _utstr_t {
+	char *str;
+	int len;
+} utstr_t;
 
+static inline int utstr_create(utstr_t *utstr, int len)
+{
+	if (unlikely(!utstr))
+		return -1;
+
+	utstr->str = UT_MALLOC(len + 1);
+	if (!utstr->str)
+		return -1;
+	utstr->len = len;
+	return 0;
+}
+
+static inline void utstr_free(utstr_t *utstr) 
+{
+	if (unlikely(!utstr))
+		return;
+	if (utstr->str) {
+		UT_FREE(utstr->str);
+		utstr->str = NULL;
+	}
+	utstr->len = 0;
+}
+
+#define MAX_URLGNZ_URLLEN	1024
+#define MAX_URLGNZ_PARMLEN	32
+#define MAX_URLGNZ_PARMVALUELEN	128
 
 #endif /* end of __H_UTLIST_H__  */
 

@@ -7,6 +7,8 @@
 #ifndef __H_URLTREE_POLICY_H__
 #define __H_URLTREE_POLICY_H__
 
+#include "utlist.h"
+
 /* url filter; lots of urls need not to learn, such as jpg, css and so on */
 /* 
  * Return:1, need to learn; 0, don't learn; -1, error;
@@ -23,23 +25,6 @@ static inline int utp_filter(char *url, int len, int type)
 		return 1;
 	return 0;
 }
-
-
-
-/* url patten policy */
-typedef struct  _url_patten_t{
-#define URL_PREDEFINED_JSP 	1
-#define URL_PREDEFINED_OWA2K3	2
-#define URL_CUSTOM 		3
-	unsigned char type;
-	char *url_reg_exp;
-	char *newurl;
-	char *extadd_param_name;
-	char *extadd_param_value;
-} url_patten;
-
-
-
 
 
 
