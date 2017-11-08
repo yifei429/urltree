@@ -8,6 +8,7 @@
 #define __H_URLTREE_POLICY_H__
 
 #include "utlist.h"
+#include "urltree.h"
 
 /* url filter; lots of urls need not to learn, such as jpg, css and so on */
 /* 
@@ -40,7 +41,9 @@ static inline int utp_filter(char *url, int len, int type)
 
 
 
-
+typedef struct _utp_db_urlmsg_t {
+	
+} utp_db_urlmsg;
 /* flush to db frequency by tree node */
 
 

@@ -9,8 +9,10 @@
 #define __H_UTLIST_H__
 
 
+#include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 
 typedef struct utlist {
 	struct utlist	*n;	/* must be first as ulist_head_t */
