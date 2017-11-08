@@ -185,6 +185,9 @@ void ut_tree_release(ut_root *root)
 		root->hash = NULL;
 	}
 #endif
+	if (root->msgs) {
+		utp_msgs_release(root->msgs);
+	}
 	pthread_rwlock_unlock(&root->lock);
 	UT_FREE(root);
 	return;
