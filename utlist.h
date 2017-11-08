@@ -161,6 +161,8 @@ static inline void utstr_free(utstr_t *utstr)
 #define MAX_URLGNZ_BACKREF_COUNT 10	
 #define MAX_URLGNZ_BACKREF_LEN 	256	
 
+#define MAX_URLTREE_TABLE_NAME	64
+
 #endif /* end of __H_UTLIST_H__  */
 
 

@@ -11,6 +11,7 @@
 #include <sys/time.h>
 
 #include "urltree.h"
+#include "ut_policy.h"
 
 #ifdef UT_HASH_CACHE
 static unsigned int ut_elfhash(int seed, char *k, int len)
@@ -190,8 +191,6 @@ void ut_tree_release(ut_root *root)
 }
 
 
-
-ut_root *ut_tree_create();
 
 /* ==================== action ====================== */
 static inline ut_node *__ut_level_search(ut_node *node, char *str, int len)
@@ -544,7 +543,7 @@ out:
 }
 
 
-ut_root *ut_tree_create()
+ut_root *ut_tree_create(char *tablename)
 {
 	ut_root *root;
 	root = UT_MALLOC(sizeof(ut_root));
@@ -572,6 +571,12 @@ ut_root *ut_tree_create()
 #endif
 	if(pthread_rwlock_init(&root->lock, NULL)) {
 		ut_dbg(UT_DEBUG_ERR,"pthread init failed for tree\n");
+		goto failed;
+	}
+
+	root->msgs = utp_msgs_create(tablename);
+	if (!root->msgs) {
+		ut_dbg(UT_DEBUG_ERR,"create dbmsg failed for tree %s\n", tablename);
 		goto failed;
 	}
 

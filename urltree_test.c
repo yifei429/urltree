@@ -232,7 +232,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 	printf("total url cnt :%d\n", cnt);
-	root = ut_tree_create();
+	root = ut_tree_create("test_website");
 	if (!root) {
 		printf("init tree failed\n");
 		goto out;

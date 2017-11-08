@@ -52,11 +52,13 @@ typedef struct _ut_root {
 #ifdef UT_HASH_CACHE
 	uthash_t *hash;
 #endif
+
+	void *msgs;
 	pthread_rwlock_t lock; 
 } ut_root;
 
 /* api */
-ut_root *ut_tree_create();
+ut_root *ut_tree_create(char *tablename);
 void ut_tree_release(ut_root *root);
 
 /* must call ut_node_put after search */
