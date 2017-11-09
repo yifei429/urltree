@@ -622,7 +622,13 @@ ut_node* ut_search(ut_root *root, char *str, int len)
 out:
 	if (node) {
 		/* in rwlock, and don't add to leaf hash */
-		node->leaf = 1;
+		if (!node->leaf) {
+			if (__sync_fetch_and_add(&node->leaf, 1) != 0) {
+				utp_add_msg(root->msgs, node, utp_dbmsg_refresh ,root->total_node);
+			} else {
+				__sync_fetch_and_sub(&node->leaf, 1);
+			}
+		}
 		__ut_node_get(node);
 	}
 	pthread_rwlock_unlock(&root->lock);

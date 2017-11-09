@@ -37,9 +37,9 @@ typedef struct _ut_node {
 #endif
 	struct _ut_node *parent;
 	unsigned int 	ref;
+	unsigned int	leaf;	/* atomic, can't be leaf:1 */
 	unsigned short level;
 	unsigned short str_len;	/* less than 65535 */
-	unsigned char leaf:1;
 	char *str;
 	
 	ut_args args;
