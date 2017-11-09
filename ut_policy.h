@@ -65,7 +65,7 @@ int utp_refresh_db(void *msgs);
 
 int utp_add_msg(utp_msgs *msgs, struct _ut_node *node, int act, int totalcnt);
 
-int utp_init();
+int utp_init(int test);
 void utp_release();
 void utp_timeout();
 

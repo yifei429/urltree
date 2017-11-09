@@ -12,6 +12,7 @@
 
 ptimer_tree_t __dbtimer; 
 ptimer_tree_t *dbtimer = NULL; 
+static int utp_test = 0;
 
 void utp_msgs_release(utp_msgs *msgs)
 {
@@ -29,8 +30,9 @@ void utp_msgs_release(utp_msgs *msgs)
 		m = next;
 	}
 	
-	UT_FREE(msgs);
+	ut_dbg(UT_DEBUG_INFO, "release db message array for tree %s\n", msgs->tree_tname);
 	pthread_rwlock_unlock(&msgs->lock);
+	UT_FREE(msgs);
 	return;
 }
 
@@ -58,6 +60,8 @@ utp_msgs* utp_msgs_create(char *tablename)
 	}
 	snprintf(msgs->tree_tname, sizeof(msgs->tree_tname),"%s", tablename);
 
+	ut_dbg(UT_DEBUG_INFO, "create db message array for tree %s\n", tablename);
+
 	return msgs;
 failed:
 	if (msgs) {
@@ -69,6 +73,7 @@ failed:
 static inline int _utp_refresh_db(utp_url_dbmsg *msg, int db)
 {
 	/* run sql command to change the database */
+	ut_dbg(UT_DEBUG_TRACE, "[db] update for node %s\n", msg->node->str);
 	return 0;
 }
 
@@ -82,6 +87,7 @@ int utp_refresh_db(void *args)
 	if (!msgs)
 		return -1;
 
+	ut_dbg(UT_DEBUG_INFO, "[db] update for tree %s\n", msgs->tree_tname);
 	pthread_rwlock_rdlock(&msgs->lock);
 	if (msgs->cnt == 0)
 		goto out;
@@ -115,6 +121,9 @@ int utp_add_msg(utp_msgs *msgs, ut_node *node, int act, int total_cnt)
 	if (unlikely(!msgs || !node))
 		return -1;
 
+	if(utp_test)
+		return 0;
+
 	pthread_rwlock_wrlock(&msgs->lock);
 	if (msgs->cnt >= UTP_MSGS_MAX_CNT) {
 		ut_dbg(UT_DEBUG_ERR, "too many db msg, max:%d\n", UTP_MSGS_MAX_CNT);
@@ -137,9 +146,11 @@ int utp_add_msg(utp_msgs *msgs, ut_node *node, int act, int total_cnt)
 	msgs->cnt++;
 	
 	if (msgs->cnt == 1) {
-		if (total_cnt >200) {
+		if (total_cnt > 1000) {
 			timeout = 300;
-		} else if (total_cnt > 50) {
+		} else if (total_cnt > 500) {
+			timeout = 180;
+		} else if (total_cnt > 100) {
 			timeout = 60;
 		} else {
 			timeout = 10;
@@ -149,16 +160,28 @@ int utp_add_msg(utp_msgs *msgs, ut_node *node, int act, int total_cnt)
 			goto out;
 		}
 		ptimer_add(dbtimer, &msgs->timer, utp_refresh_db, timeout, msgs);
+		ut_dbg(UT_DEBUG_INFO, "[db] add timer with db node %s for tree %s\n", 
+			node->str, msgs->tree_tname);
+	} else {
+		if (msgs->cnt > UTP_MSGS_MAX_CNT * 7/10) {
+			timeout = 0;
+			ptimer_del(dbtimer, &msgs->timer);
+			ptimer_add(dbtimer, &msgs->timer, utp_refresh_db, timeout, msgs);
+			ut_dbg(UT_DEBUG_WARNING, "[db] start timer now(cnt:%d) with db node %s for tree %s\n", 
+				msgs->cnt, node->str, msgs->tree_tname);
+		}
 	}
 	
+	ut_dbg(UT_DEBUG_TRACE, "[db] add db node %s for tree %s\n", node->str, msgs->tree_tname);
 out:
 	pthread_rwlock_unlock(&msgs->lock);
 	return 0;
 }
 
-int utp_init()
+int utp_init(int test)
 {
 	dbtimer = &__dbtimer;
+	utp_test = test;
 	return ptimer_init(dbtimer, 1);	
 }
 

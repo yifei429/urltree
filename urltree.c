@@ -365,6 +365,7 @@ static inline ut_node* __ut_node_insert(ut_root *root, ut_node *parent,
 	}
 #endif
 	root->total_node++;
+	utp_add_msg(root->msgs, node, utp_dbmsg_add ,root->total_node);
 	return node;
 failed:
 	if (node) {
@@ -608,7 +609,7 @@ ut_node* ut_search(ut_root *root, char *str, int len)
 		//printf("find node in hash\n");
 		goto out;
 	} else {
-		//printf("=========no node in hash\n");
+		ut_dbg(UT_DEBUG_TRACE, "no node in hash for(len:%d) %s\n", len, str);
 	}
 
 #endif
@@ -628,16 +629,9 @@ out:
 	return node;
 }
 
-
-int ut_flush2db(ut_root *root)
+int ut_global_init(int test)
 {
-	return 0;
-}
-
-
-int ut_global_init()
-{
-	if (utp_init()) {
+	if (utp_init(test)) {
 		ut_dbg(UT_DEBUG_ERR, "init db failed\n");
 		return -1;
 	}
@@ -650,7 +644,7 @@ void ut_global_free()
 	return;
 }
 
-void ut_timerout()
+void ut_timeout()
 {
 	utp_timeout();
 }

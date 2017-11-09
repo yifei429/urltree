@@ -57,7 +57,7 @@ typedef struct _ut_root {
 } ut_root;
 
 /* api */
-int ut_global_init();
+int ut_global_init(int test);
 void ut_global_free();
 
 ut_root *ut_tree_create(char *tablename);
@@ -71,6 +71,7 @@ ut_node* ut_insert(ut_root *root, char *str, int len);
 int ut_delete(ut_root *root, char *str, int len);
 void ut_tree_dump(ut_root *root);
 
+void ut_timeout();
 
 void __ut_node_leaffree(ut_node *node);
 static inline void ut_node_put(ut_node *node)

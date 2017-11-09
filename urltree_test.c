@@ -210,7 +210,51 @@ int ut_tree_delete(ut_root *root, struct urlpath *head)
 	return 0;
 }
 
+int test_type = 0;
+char web_filename[256];
+int _parse_opt(int argc, char **argv)
+{
+        char c;
+        //const char optstr[] = ":d:h:p";
+        const char optstr[] = "t:f:h";
+	char *ptr;
 
+        opterr = 0;
+        while ( (c = getopt(argc, argv, optstr)) != -1) {
+                switch (c) {
+                case 't':
+			test_type = atoi(optarg);
+			printf("test type:%d\n", test_type);
+                        break;
+		case 'f':
+			sprintf(web_filename, "%s", optarg);
+			printf("test web_filename:%s\n", web_filename);
+			break;
+                case 'h':
+			printf("Usage: ./main -t <number>\n,"
+				"1, tree memory; 2, for search;"
+				"3, for db;\n");
+                        exit(0);
+                case '?':
+                        printf("unknow option %c\n", optopt);
+                        return -1;
+                }
+        }
+        if (optind != argc)
+                return -1;
+
+        return 0;
+}
+
+void *timeout_thread(void *arg)
+{
+	while(1) {
+		usleep(10);
+		ut_timeout();
+	}
+
+	return NULL;
+}
 
 int main(int argc, char **argv)
 {
@@ -220,63 +264,111 @@ int main(int argc, char **argv)
 	int i = 1;
 	ut_root *root = NULL;
 	struct mallinfo mstart, mend;
+	pthread_t thread_id;
 
-	if (argc != 2) {
-		printf("usage: ./main website.txt\n");
+	if (_parse_opt(argc, argv)) {
+		printf("wrong option\n");
+		return -1;
+	}
+	if (strlen(web_filename) <= 0) {
+		printf("missinge filename for websiete\n");
 		return -1;
 	}
 
-	head = read_url_path(argv[1], &cnt);
+
+	head = read_url_path(web_filename, &cnt);
 	if (!head || cnt <= 0) {
 		printf("read web site failed %d\n", cnt);
 		return -1;
 	}
 	printf("total url cnt :%d\n", cnt);
-	root = ut_tree_create("test_website");
-	if (!root) {
-		printf("init tree failed\n");
-		goto out;
-	}
+	switch(test_type){
+	case 0:
+		ut_global_init(1);
+		root = ut_tree_create("test_website");
+		if (!root) {
+			printf("init tree failed\n");
+			goto out;
+		}
 
-	printf("======> memory start\n");
-	display_mallinfo(NULL, &mstart);
-	printf("[stats]\n");
-	malloc_stats();
+		printf("======> memory start\n");
+		display_mallinfo(NULL, &mstart);
+		printf("[stats]\n");
+		malloc_stats();
 
-	insert_tree(root, head);
+		insert_tree(root, head);
 
-	display_mallinfo(NULL, &mend);
-	printf("======> memory end\n");
-	printf("[stats]\n");
-	malloc_stats();
-	printf("[mallinfo]\n");
-	display_usedmem(&mstart, &mend);
+		//url_path_dump(head);
+		//ut_tree_dump(root);
+		display_mallinfo(NULL, &mend);
+		printf("======> memory end\n");
+		printf("[stats]\n");
+		malloc_stats();
+		printf("[mallinfo]\n");
+		display_usedmem(&mstart, &mend);
 
-	//url_path_dump(head);
-	//ut_tree_dump(root);
-	ut_tree_search(root, head);
-	
-	printf("sizeof(utnode_head_t) is :%ld, bucket:%ld\n", 
-		sizeof(utnode_head_t), sizeof(utnode_head_t) * UTHASH_MAX_BUCKETS );
+		printf("sizeof(utnode_head_t) is :%ld, bucket:%ld\n", 
+			sizeof(utnode_head_t), sizeof(utnode_head_t) * UTHASH_MAX_BUCKETS );
 
-	printf("root count:%d\n", root->total_node);
+		printf("root count:%d\n", root->total_node);
 #ifdef UT_HASH_CACHE
-	printf("hash count:%d\n", root->hash->node_cnt);
+		printf("hash count:%d\n", root->hash->node_cnt);
 #endif
-	ut_tree_delete(root, head);
-	ut_tree_dump(root);
+		ut_tree_delete(root, head);
+		ut_tree_dump(root);
+
+		break;
+	case 2:
+		ut_global_init(1);
+		root = ut_tree_create("test_website");
+		if (!root) {
+			printf("init tree failed\n");
+			goto out;
+		}
+
+		insert_tree(root, head);
+		ut_tree_search(root, head);
+
 #if 0
-	printf("=============>insert again\n");
-	insert_tree(root, head);
-	ut_tree_dump(root);
-	printf("=============>delete again\n");
-	ut_tree_delete(root, head);
-	ut_tree_dump(root);
+		printf("=============>insert again\n");
+		insert_tree(root, head);
+		ut_tree_dump(root);
+		printf("=============>delete again\n");
+		ut_tree_delete(root, head);
+		ut_tree_dump(root);
 #endif
+
+		break;
+	case 3:
+		ut_global_init(0);
+		if (pthread_create(&thread_id, NULL, timeout_thread, NULL)) {
+			printf("start thread for db timer failed\n");
+			return -1;
+		}
+		sleep(1);
+		root = ut_tree_create("test_website");
+		if (!root) {
+			printf("init tree failed\n");
+			goto out;
+		}
+
+		insert_tree(root, head);
+		while (1) {
+			usleep(10);
+		}
+		break;
+	default:
+		break;
+	}
 out:
 	if (root)
 		ut_tree_release(root);
 	if (head)
 		url_path_free(head);
+
+	ut_global_free();
 	return 0;
 }
+
+
+
