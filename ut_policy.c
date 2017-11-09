@@ -4,8 +4,9 @@
  */
 
 
+#include <pthread.h>
 
-
+#include "urltree.h"
 #include "ut_policy.h"
 
 
@@ -97,6 +98,7 @@ out:
 
 static inline int _utp_refresh_db(utp_url_dbmsg *msg, int db)
 {
+	/* run sql command to change the database */
 	return 0;
 }
 

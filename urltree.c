@@ -13,6 +13,10 @@
 #include "urltree.h"
 #include "ut_policy.h"
 
+
+ptimer_tree_t __dbtimer; 
+ptimer_tree_t *dbtimer = NULL; 
+
 #ifdef UT_HASH_CACHE
 static unsigned int ut_elfhash(int seed, char *k, int len)
 {
@@ -634,4 +638,19 @@ int ut_flush2db(ut_root *root)
 }
 
 
+int ut_global_init()
+{
+	dbtimer = &__dbtimer;
+	return ptimer_init(dbtimer, 1);	
+}
+
+void ut_global_free()
+{
+	return;
+}
+
+void ut_timerout()
+{
+	ptimer_timeout(dbtimer);
+}
 

@@ -8,7 +8,6 @@
 #define __H_URLTREE_POLICY_H__
 
 #include "utlist.h"
-#include "urltree.h"
 
 /* url filter; lots of urls need not to learn, such as jpg, css and so on */
 /* 
@@ -37,14 +36,14 @@ static inline int utp_filter(char *url, int len, int type)
 
 
 
-
+struct _ut_node;
 typedef enum {
 	utp_dbmsg_add = 0x00,
 	utp_dbmsg_del = 0x01,
 	utp_dbmsg_refresh = 0x02,
 } utp_dbmsg_act;
 typedef struct _utp_url_dbmsg {
-	ut_node *node;
+	struct _ut_node *node;
 	utp_dbmsg_act act;
 	struct _utp_url_dbmsg *next;
 } utp_url_dbmsg;
@@ -61,6 +60,8 @@ typedef struct _utp_msgs_t {
 utp_msgs* utp_msgs_create(char *tablename);
 void utp_msgs_release(utp_msgs *msgs);
 int utp_refresh_db(utp_msgs *msgs);
+
+int utp_add_msg(utp_msgs *msgs, struct _ut_node *node, int act);
 
 #if 0
 static inline void utp_msgs_release(utp_msgs *msgs)

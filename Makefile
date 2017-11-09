@@ -2,7 +2,8 @@ CFLAGS= -g -std=gnu99
 INCS=
 #CC=purify gcc
 CC=gcc
-URLTEESRCS=  urltree.o ut_policy.o urltree_gnz.o urltree_gnz_conf.o
+URLTEESRCS=  urltree.o ut_policy.o urltree_gnz.o urltree_gnz_conf.o	\
+	rbtree.o
 URLCBTREESRCS = url_cbtree.o
 LDFLAGS += -L./
 LDFLAGS += -lpthread -lpcre 
