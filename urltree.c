@@ -606,7 +606,7 @@ ut_node* ut_search(ut_root *root, char *str, int len)
 #ifdef UT_HASH_CACHE
 	node = ut_hash_search(root, str, len, 0, str, 0);
 	if (node) {
-		//printf("find node in hash\n");
+		ut_dbg(UT_DEBUG_TRACE, "find node in hash for(len:%d) %s\n", len, str);
 		goto out;
 	} else {
 		ut_dbg(UT_DEBUG_TRACE, "no node in hash for(len:%d) %s\n", len, str);
@@ -616,13 +616,13 @@ ut_node* ut_search(ut_root *root, char *str, int len)
 	node = root->node;
 	node = ut_level_search(node, str, len, str, &parent, &left);
 	if (node) {
-		/* in rwlock, and don't add to leaf hash */
-		node->leaf = 1;
 		goto out;
 	}
 	node = NULL;
 out:
 	if (node) {
+		/* in rwlock, and don't add to leaf hash */
+		node->leaf = 1;
 		__ut_node_get(node);
 	}
 	pthread_rwlock_unlock(&root->lock);
