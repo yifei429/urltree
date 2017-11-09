@@ -8,6 +8,7 @@
 #define __H_URLTREE_POLICY_H__
 
 #include "utlist.h"
+#include "proxy_timer.h"
 
 /* url filter; lots of urls need not to learn, such as jpg, css and so on */
 /* 
@@ -55,13 +56,18 @@ typedef struct _utp_msgs_t {
 #define UTP_MSGS_MAX_CNT 2000
 	int cnt;
 	pthread_rwlock_t lock;
+	ptimer_node_t	timer;
 } utp_msgs;
 
 utp_msgs* utp_msgs_create(char *tablename);
 void utp_msgs_release(utp_msgs *msgs);
-int utp_refresh_db(utp_msgs *msgs);
+int utp_refresh_db(void *msgs);
 
-int utp_add_msg(utp_msgs *msgs, struct _ut_node *node, int act);
+int utp_add_msg(utp_msgs *msgs, struct _ut_node *node, int act, int totalcnt);
+
+int utp_init();
+void utp_release();
+void utp_timeout();
 
 #if 0
 static inline void utp_msgs_release(utp_msgs *msgs)

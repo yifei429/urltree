@@ -16,7 +16,6 @@
 #include "urltree_hash.h"
 #include "utlist.h"
 #include "urltree_args.h"
-#include "proxy_timer.h"
 
 
 //#define UT_HASH_CACHE	1
@@ -53,12 +52,9 @@ typedef struct _ut_root {
 #ifdef UT_HASH_CACHE
 	uthash_t *hash;
 #endif
-	ptimer_node_t	timer;
 	void *msgs;
 	pthread_rwlock_t lock; 
 } ut_root;
-
-extern ptimer_tree_t *dbtimer; 
 
 /* api */
 int ut_global_init();
