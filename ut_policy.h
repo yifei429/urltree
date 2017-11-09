@@ -57,6 +57,7 @@ typedef struct _utp_msgs_t {
 	int cnt;
 	pthread_rwlock_t lock;
 	ptimer_node_t	timer;
+	int	timer_now;
 } utp_msgs;
 
 utp_msgs* utp_msgs_create(char *tablename);

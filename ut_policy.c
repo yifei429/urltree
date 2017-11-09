@@ -87,8 +87,12 @@ int utp_refresh_db(void *args)
 	if (!msgs)
 		return -1;
 
-	ut_dbg(UT_DEBUG_INFO, "[db] update for tree %s\n", msgs->tree_tname);
-	pthread_rwlock_rdlock(&msgs->lock);
+	//ut_dbg(UT_DEBUG_INFO, "[db] update for tree %s\n", msgs->tree_tname);
+	pthread_rwlock_wrlock(&msgs->lock);
+	if (msgs->timer_now) {
+		ut_dbg(UT_DEBUG_INFO, "[db] now update for tree %s\n", msgs->tree_tname);
+		msgs->timer_now = 0;
+	}
 	if (msgs->cnt == 0)
 		goto out;
 
@@ -108,6 +112,7 @@ int utp_refresh_db(void *args)
 	msgs->head = msgs->tail = NULL;
 	msgs->cnt = 0;
 
+	ut_dbg(UT_DEBUG_INFO, "[db] update for tree %s\n", msgs->tree_tname);
 out:
 	pthread_rwlock_unlock(&msgs->lock);
 	return 0;
@@ -163,12 +168,13 @@ int utp_add_msg(utp_msgs *msgs, ut_node *node, int act, int total_cnt)
 		ut_dbg(UT_DEBUG_INFO, "[db] add timer with db node %s for tree %s\n", 
 			node->str, msgs->tree_tname);
 	} else {
-		if (msgs->cnt > UTP_MSGS_MAX_CNT * 7/10) {
+		if (msgs->cnt > UTP_MSGS_MAX_CNT * 7/10 && !msgs->timer_now) {
 			timeout = 0;
 			ptimer_del(dbtimer, &msgs->timer);
 			ptimer_add(dbtimer, &msgs->timer, utp_refresh_db, timeout, msgs);
 			ut_dbg(UT_DEBUG_WARNING, "[db] start timer now(cnt:%d) with db node %s for tree %s\n", 
 				msgs->cnt, node->str, msgs->tree_tname);
+			msgs->timer_now = 1;
 		}
 	}
 	
@@ -192,6 +198,7 @@ void utp_release()
 
 void utp_timeout()
 {
+	//ut_dbg(UT_DEBUG_INFO, "[db] url db timeout check\n");
 	ptimer_timeout(dbtimer);
 }
 

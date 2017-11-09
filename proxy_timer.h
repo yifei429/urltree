@@ -125,6 +125,18 @@ static inline int ptimer_is_active(ptimer_tree_t *tree, ptimer_node_t *ptimer)
 	return ret;
 }
 
+static inline int __ptimer_del(ptimer_tree_t *tree, ptimer_node_t *ptimer)
+{
+	if (RB_EMPTY_NODE(&ptimer->tm_node) || ptimer->tm_node.__rb_parent_color == 0) {
+		return 0; /* return 0 currently */
+	} 
+		
+	rb_erase(&ptimer->tm_node, &tree->root);
+	RB_CLEAR_NODE(&ptimer->tm_node);
+	tree->count--;
+	return 0;
+}
+
 static inline int ptimer_del(ptimer_tree_t *tree, ptimer_node_t *ptimer)
 {
 	int ret = 0;
@@ -132,13 +144,7 @@ static inline int ptimer_del(ptimer_tree_t *tree, ptimer_node_t *ptimer)
 	if (tree->lock_enabled)
 		pthread_rwlock_wrlock(&tree->lock);
 
-	if (RB_EMPTY_NODE(&ptimer->tm_node) || ptimer->tm_node.__rb_parent_color == 0) {
-		ret = 0; /* return 0 currently */
-	} else {
-		rb_erase(&ptimer->tm_node, &tree->root);
-		RB_CLEAR_NODE(&ptimer->tm_node);
-		tree->count--;
-	}
+	ret = __ptimer_del(tree, ptimer);
 
 	if (tree->lock_enabled)
 		pthread_rwlock_unlock(&tree->lock);
@@ -171,7 +177,7 @@ static inline void ptimer_timeout(ptimer_tree_t *tree)
 		}
 
 		/* delete the timeout node first before timeout_handler */ 
-		ptimer_del(tree, ptimer);
+		__ptimer_del(tree, ptimer);
 		
 		if (ptimer->handler)
 			ptimer->handler(ptimer->arg);

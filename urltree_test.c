@@ -139,6 +139,7 @@ ut_root *insert_tree(ut_root *root, struct urlpath *head)
 		else 
 			printf("insert node failed\n");
 		head = head->next;
+		//sleep(1);
 	}
 
 	gettimeofday(&end,NULL);
